@@ -261,6 +261,8 @@ export class RootMenuComponent extends React.Component {
                     <ExportImageMenuComponent />
                 </Menu.Item>
                 <MenuDivider />
+                <Menu.Item text="Create Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, { mode: WorkspaceDialogMode.Create})} />
+
                 <Menu.Item text="Open Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Open})} />
                 <Menu.Item text="Save Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Save})} />
                 <Menu.Divider />

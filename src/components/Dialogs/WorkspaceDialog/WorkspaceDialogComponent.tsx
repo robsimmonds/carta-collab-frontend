@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, IDialogProps, InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, DialogProps, InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
 import {Cell, Column, IRegion, RenderMode, SelectionModes, Table, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -19,7 +19,8 @@ import "./WorkspaceDialogComponent.scss";
 export enum WorkspaceDialogMode {
     Hidden,
     Save,
-    Open
+    Open,
+    Create //new create mode
 }
 
 export const WorkspaceDialogComponent = observer(() => {
@@ -60,6 +61,35 @@ export const WorkspaceDialogComponent = observer(() => {
         setWorkspaceName("");
         setWorkspaceList(undefined);
     }, [appStore]);
+
+    
+    // 1. create workspace logic
+    const createWorkspace = useCallback(async (name: string) => {
+        if (!name) return;
+	setIsFetching(true);
+	
+	try {
+	    // Calls a new store method that creates db and inits git
+	    const res = await appStore.createWorkspace(name);
+	    if (res) {
+	        AppToaster.show(SuccessToast("floppy-disk", "Workspace created"));
+		handleCloseClicked();
+		return;
+	    }
+	} catch (err) {
+	    console.log(err);
+	}
+	AppToaster.show(ErrorToast("Error creating workspace"));
+	setIsFetching(false);
+    }, [appStore, handleCloseClicked]);
+
+    
+    const handleCreateClicked = () => {
+	if (!workspaceName) {
+	    return;
+	}
+   	createWorkspace(workspaceName);
+    };
 
     const saveWorkspace = useCallback(
         async (name: string) => {
@@ -142,14 +172,18 @@ export const WorkspaceDialogComponent = observer(() => {
 
     const className = classNames("workspace-dialog", {"bp3-dark": appStore.darkTheme});
 
-    const dialogProps: IDialogProps = {
+    const dialogProps: DialogProps = {
         icon: "control",
         backdropClassName: "minimal-dialog-backdrop",
         className: className,
         canOutsideClickClose: false,
         lazy: true,
         isOpen: mode !== WorkspaceDialogMode.Hidden,
-        title: mode === WorkspaceDialogMode.Save ? "Save Workspace" : "Open Workspace"
+        title: mode === WorkspaceDialogMode.Save
+			? "Save Workspace" 
+			: mode == WorkspaceDialogMode.Create
+			? "Create Workspace"
+			: "Open Workspace"
     };
 
     const handleEntryClicked = (entry: WorkspaceListItem) => {
@@ -267,11 +301,19 @@ export const WorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <AnchorButton intent={Intent.DANGER} icon="trash" onClick={handleDeleteClicked} text="Delete" disabled={isFetching || !selectedWorkspace} />
-                    {mode === WorkspaceDialogMode.Save ? (
+                    {mode === WorkspaceDialogMode.Save && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleSaveClicked} text="Save" disabled={isFetching || !workspaceName} />
-                    ) : (
+                    )}
+
+		    {mode == WorkspaceDialogMode.Open && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleOpenClicked} text="Open" disabled={isFetching || !selectedRegions?.length} />
                     )}
+		 
+		    {/*CREATE*/}
+		    {mode === WorkspaceDialogMode.Create && (
+			<AnchorButton intent={Intent.PRIMARY} onClick={handleCreateClicked} text="Create" disabled={isFetching || !workspaceName} />
+		    )}
+
                 </div>
             </div>
         </DraggableDialogComponent>

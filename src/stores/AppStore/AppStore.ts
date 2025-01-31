@@ -2463,6 +2463,12 @@ export class AppStore {
             return false;
         }
     }
+    
+    @flow.bound
+    public *createWorkspace(name: string) {
+        AppToaster.show(SuccessToast("console", `create woo`, SnippetStore.ToasterTimeout));
+    	return true;
+    }
 
     @flow.bound
     public *saveWorkspace(name: string) {
