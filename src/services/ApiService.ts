@@ -536,6 +536,32 @@ export class ApiService {
         return undefined;
     };
 
+        public createWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/createWorkspace`;
+                const res = await this.axiosInstance.put(url, {workspaceName, workspace});
+                if (res.data?.workspace?.id) {
+                    workspace.id = res.data?.workspace?.id;
+                }
+                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+            } catch (err) {
+                console.log(err);
+                return undefined;
+            }
+        } else {
+            try {
+                const obj = JSON.parse(localStorage.getItem("savedWorkspaces") ?? "{}");
+                obj[workspaceName] = workspace;
+                localStorage.setItem("savedWorkspaces", JSON.stringify(obj));
+                return workspace;
+            } catch (err) {
+                return undefined;
+            }
+        }
+    };
+
+    
     public setWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
