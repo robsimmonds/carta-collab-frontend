@@ -364,6 +364,10 @@ export class AppStore {
         return this.backendService?.connectionStatus !== ConnectionStatus.ACTIVE || this.fileLoading;
     }
 
+    @computed get openWorkspaceDisabled(): boolean {
+    	return !this.activeWorkspace;
+    }
+
     @computed get appendFileDisabled(): boolean {
         return this.openFileDisabled || !this.activeFrame;
     }
