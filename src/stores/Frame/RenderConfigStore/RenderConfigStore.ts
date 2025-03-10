@@ -116,7 +116,8 @@ export class RenderConfigStore {
         "Green",
         "Cyan",
         "Blue",
-        "Violet"
+        "Violet",
+        "Magenta"
     ];
     /**
      * The selected colormaps shown in the option.
@@ -152,13 +153,14 @@ export class RenderConfigStore {
      * Some commonly used single-color gradients.
      */
     static readonly COLOR_MAPS_MONO = new Map<string, string>([
-        ["Red", "#FF0000"],
-        ["Orange", "#FFA500"],
-        ["Yellow", "#FFFF00"],
-        ["Green", "#00FF00"],
-        ["Cyan", "#00FFFF"],
-        ["Blue", "#0000FF"],
-        ["Violet", "#7F00FF"]
+        ["Red", "#ff0000"],
+        ["Orange", "#ffa500"],
+        ["Yellow", "#ffff00"],
+        ["Green", "#00ff00"],
+        ["Cyan", "#00ffff"],
+        ["Blue", "#0000ff"],
+        ["Violet", "#7f00ff"],
+        ["Magenta", "#ff00ff"]
     ]);
     static readonly CUSTOM_COLOR_MAP_INDEX = -1;
     static readonly COLOR_MAPS_CUSTOM = "custom";
@@ -183,6 +185,7 @@ export class RenderConfigStore {
     @observable alpha: number;
     @observable inverted: boolean;
     @observable channelHistogram: CARTA.IHistogram;
+    @observable channelMapHistogram: CARTA.IHistogram;
     @observable cubeHistogram: CARTA.IHistogram;
     @observable useCubeHistogram: boolean;
     @observable useCubeHistogramContours: boolean;
@@ -192,6 +195,8 @@ export class RenderConfigStore {
     @observable stokesIndex: number;
     @observable scaleMin: number[];
     @observable scaleMax: number[];
+    @observable channelMapScaleMin: number;
+    @observable channelMapScaleMax: number;
     @observable visible: boolean;
     @observable previewHistogramMax: number;
     @observable previewHistogramMin: number;
@@ -200,7 +205,10 @@ export class RenderConfigStore {
 
     private frame: FrameStore;
 
-    constructor(readonly preference: PreferenceStore, frame: FrameStore) {
+    constructor(
+        readonly preference: PreferenceStore,
+        frame: FrameStore
+    ) {
         makeObservable(this);
         this.frame = frame;
         const stokesLength = this.frame.polarizations.length !== 0 ? this.frame.polarizations.length : 1;
@@ -319,11 +327,19 @@ export class RenderConfigStore {
     }
 
     @computed get scaleMinVal() {
-        return this.previewHistogramMin ? Math.max(this.previewHistogramMin, this.scaleMin[this.stokesIndex]) : this.scaleMin[this.stokesIndex];
+        return AppStore.Instance.channelMapStore.channelMapEnabled && !AppStore.Instance.activeFrame?.isPreview
+            ? this.channelMapScaleMin
+            : this.previewHistogramMin
+              ? Math.max(this.previewHistogramMin, this.scaleMin[this.stokesIndex])
+              : this.scaleMin[this.stokesIndex];
     }
 
     @computed get scaleMaxVal() {
-        return this.previewHistogramMax ? Math.min(this.previewHistogramMax, this.scaleMax[this.stokesIndex]) : this.scaleMax[this.stokesIndex];
+        return AppStore.Instance.channelMapStore.channelMapEnabled && !AppStore.Instance.activeFrame?.isPreview
+            ? this.channelMapScaleMax
+            : this.previewHistogramMax
+              ? Math.min(this.previewHistogramMax, this.scaleMax[this.stokesIndex])
+              : this.scaleMax[this.stokesIndex];
     }
 
     @computed get selectedPercentileVal() {
@@ -424,6 +440,16 @@ export class RenderConfigStore {
         }
     };
 
+    @action updateChannelMapHistogram = (histogram: CARTA.IHistogram) => {
+        this.channelMapHistogram = histogram;
+
+        // Need change to 1 standard deviation.
+        if (this.selectedPercentile[this.stokesIndex] > 0 && !this.useCubeHistogram) {
+            this.channelMapScaleMin = -histogram.stdDev;
+            this.channelMapScaleMax = histogram.stdDev * 10;
+        }
+    };
+
     @action updateCubeHistogram = (histogram: CARTA.IHistogram, progress: number) => {
         this.cubeHistogram = histogram;
         this.cubeHistogramProgress = progress;
@@ -439,8 +465,13 @@ export class RenderConfigStore {
      * @param maxVal - The maximum scaling value.
      */
     @action setCustomScale = (minVal: number, maxVal: number) => {
-        this.scaleMin[this.stokesIndex] = minVal;
-        this.scaleMax[this.stokesIndex] = maxVal;
+        if (AppStore.Instance.channelMapStore.channelMapEnabled) {
+            this.channelMapScaleMin = minVal;
+            this.channelMapScaleMax = maxVal;
+        } else {
+            this.scaleMin[this.stokesIndex] = minVal;
+            this.scaleMax[this.stokesIndex] = maxVal;
+        }
         this.selectedPercentile[this.stokesIndex] = -1;
         this.updateSiblings();
     };

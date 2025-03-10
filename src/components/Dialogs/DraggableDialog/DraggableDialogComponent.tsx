@@ -1,8 +1,8 @@
 // Based on code from https://github.com/palantir/blueprint/issues/336
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import {createRoot} from "react-dom/client";
 import {ResizeEnable, Rnd} from "react-rnd";
-import {Button, Dialog, IDialogProps} from "@blueprintjs/core";
+import {Button, Classes, Dialog, DialogProps} from "@blueprintjs/core";
 import {observer} from "mobx-react";
 
 import {AppStore, HelpStore, HelpType} from "stores";
@@ -10,7 +10,7 @@ import {AppStore, HelpStore, HelpType} from "stores";
 import "./DraggableDialogComponent.scss";
 
 export class ResizableDialogComponentProps {
-    dialogProps: IDialogProps;
+    dialogProps: DialogProps;
     defaultWidth: number;
     defaultHeight: number;
     minWidth?: number;
@@ -19,31 +19,54 @@ export class ResizableDialogComponentProps {
     helpType?: HelpType;
     onResizeStop?: (newWidth: number, newHeight: number) => void;
     dialogId: string;
+    children?: React.ReactNode;
 }
 
 @observer
 export class DraggableDialogComponent extends React.Component<ResizableDialogComponentProps> {
-    private dd: HTMLDivElement;
+    private dd = React.createRef<HTMLDivElement>();
     private rnd: Rnd;
 
-    componentDidUpdate() {
-        const header = this.dd.getElementsByClassName("bp3-dialog-header");
-        if (this.props.helpType && header.length > 0 && this.dd.getElementsByClassName("help-button").length === 0) {
+    private onOpening = () => {
+        // workaround for the blue focus box suppressed to the top after blueprintjs v4 upgrade.
+        const focusTrap = this.dd.current.getElementsByClassName(Classes.OVERLAY_START_FOCUS_TRAP)[0] as HTMLDivElement;
+        const container = this.dd.current.getElementsByClassName(Classes.DIALOG_CONTAINER)[0] as HTMLDivElement;
+        if (focusTrap?.getAttribute("tabindex") === "0" && container) {
+            focusTrap.removeAttribute("tabindex");
+            container.focus();
+        }
+
+        // add help button in dialog header
+        const header = this.dd.current.getElementsByClassName(Classes.DIALOG_HEADER);
+        if (this.props.helpType && header?.length > 0 && this.dd.current.getElementsByClassName("help-button").length === 0) {
             const helpButton = <Button icon="help" minimal={true} onClick={this.onClickHelpButton} />;
             const helpButtonDiv = document.createElement("div") as HTMLDivElement;
             helpButtonDiv.setAttribute("class", "help-button");
-            ReactDOM.render(helpButton, helpButtonDiv);
-            const closeButton = this.dd.getElementsByClassName("bp3-dialog-close-button");
+
+            const root = createRoot(helpButtonDiv);
+            root.render(helpButton);
+
+            const closeButton = this.dd.current.getElementsByClassName(Classes.DIALOG_CLOSE_BUTTON);
             if (closeButton.length > 0) {
                 closeButton[0].before(helpButtonDiv);
             } else {
                 header[0].append(helpButtonDiv);
             }
         }
-    }
+
+        const dialog = this.dd.current.getElementsByClassName(Classes.DIALOG)?.[0];
+        if (dialog) {
+            dialog.setAttribute("data-testid", this.props.dialogId);
+        }
+
+        const closeButton = this.dd.current.getElementsByClassName(Classes.DIALOG_CLOSE_BUTTON)?.[0];
+        if (closeButton) {
+            closeButton.setAttribute("data-testid", `${this.props.dialogId}-header-close-button`);
+        }
+    };
 
     private onClickHelpButton = () => {
-        const centerX = this.rnd.draggable.state.x + this.rnd.resizable.size.width * 0.5;
+        const centerX = (this.rnd.draggable.state as any).x + this.rnd.resizable.size.width * 0.5;
         HelpStore.Instance.showHelpDrawer(this.props.helpType, centerX);
     };
 
@@ -77,7 +100,7 @@ export class DraggableDialogComponent extends React.Component<ResizableDialogCom
         const zIndexManager = appStore.zIndexManager;
 
         return (
-            <div className={"draggable-dialog"} ref={ref => (this.dd = ref)}>
+            <div className={"draggable-dialog"} ref={this.dd}>
                 {this.props.dialogProps.isOpen && (
                     <Rnd
                         enableResizing={resizeSettings}
@@ -92,7 +115,7 @@ export class DraggableDialogComponent extends React.Component<ResizableDialogCom
                         }}
                         minWidth={this.props.minWidth}
                         minHeight={this.props.minHeight}
-                        dragHandleClassName={"bp3-dialog-header"}
+                        dragHandleClassName={Classes.DIALOG_HEADER}
                         ref={c => {
                             this.rnd = c;
                         }}
@@ -102,13 +125,13 @@ export class DraggableDialogComponent extends React.Component<ResizableDialogCom
                     >
                         <Dialog
                             portalClassName="dialog-portal"
-                            hasBackdrop={false}
                             usePortal={false}
                             enforceFocus={false}
                             autoFocus={true}
                             {...this.props.dialogProps}
                             children={this.props.children}
                             onClose={() => appStore.dialogStore.hideDialog(this.props.dialogId)}
+                            onOpening={this.onOpening}
                         />
                     </Rnd>
                 )}

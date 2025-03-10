@@ -1,10 +1,10 @@
-import {IOptionProps, TabId} from "@blueprintjs/core";
+import {OptionProps, TabId} from "@blueprintjs/core";
 import {CARTA} from "carta-protobuf";
 import {action, autorun, computed, flow, makeObservable, observable} from "mobx";
 
 import {FileInfoType} from "components";
 import {AppToaster, ErrorToast} from "components/Shared";
-import {Freq, FrequencyUnit, LineOption, STANDARD_POLARIZATIONS, ToFileListFilterMode} from "models";
+import {FileCtypeInfo, Freq, FrequencyUnit, ImageType, LineOption, STANDARD_POLARIZATIONS, ToFileListFilterMode} from "models";
 import {BackendService} from "services";
 import {AppStore, DialogId, DialogStore, PreferenceKeys, PreferenceStore} from "stores";
 import {RegionStore} from "stores/Frame";
@@ -54,11 +54,11 @@ export class FileBrowserStore {
 
     @observable browserMode: BrowserMode = BrowserMode.File;
     @observable appendingFrame = false;
-    @observable fileList: CARTA.IFileListResponse;
-    @observable selectedFile: CARTA.IFileInfo | CARTA.ICatalogFileInfo;
-    @observable selectedHDU: string;
-    @observable HDUfileInfoExtended: {[k: string]: CARTA.IFileInfoExtended};
-    @observable regionFileInfo: string[];
+    @observable fileList: CARTA.IFileListResponse | null;
+    @observable selectedFile: CARTA.IFileInfo | CARTA.ICatalogFileInfo | null | undefined;
+    @observable selectedHDU: string | null;
+    @observable HDUfileInfoExtended: {[k: string]: CARTA.IFileInfoExtended} | null;
+    @observable regionFileInfo: string[] | null;
     @observable selectedTab: TabId = FileInfoType.IMAGE_FILE;
     @observable loadingList = false;
     @observable isImportingRegions = false;
@@ -66,19 +66,20 @@ export class FileBrowserStore {
     @observable loadingInfo = false;
     @observable fileInfoResp = false;
     @observable responseErrorMessage: string = "";
-    @observable startingDirectory: string = "$BASE";
-    @observable exportFilename: string;
+    @observable startingDirectory: string | null | undefined = "$BASE";
+    @observable exportFilename: string | null | undefined;
     @observable exportCoordinateType: CARTA.CoordinateType;
     @observable exportFileType: RegionFileType;
     @observable exportRegionIndexes: number[] = [];
+    @observable selectedFilesCtypes: {ctype: string[]; rank: number[]};
 
-    @observable catalogFileList: CARTA.ICatalogListResponse;
+    @observable catalogFileList: CARTA.ICatalogListResponse | null;
     @observable selectedCatalogFile: CARTA.ICatalogFileInfo;
-    @observable catalogFileInfo: CARTA.ICatalogFileInfo;
+    @observable catalogFileInfo: CARTA.ICatalogFileInfo | null;
     @observable catalogHeaders: Array<CARTA.ICatalogHeader>;
 
     // Save image
-    @observable saveFilename: string = "";
+    @observable saveFilename: string | null | undefined = "";
     @observable saveFileType: CARTA.FileType = CARTA.FileType.CASA;
     @observable saveSpectralStart: number = 0;
     @observable saveSpectralEnd: number = 0;
@@ -125,7 +126,7 @@ export class FileBrowserStore {
     @action showFileBrowser = (mode: BrowserMode, append = false) => {
         switch (mode) {
             case BrowserMode.SaveFile:
-                if (AppStore.Instance.appendFileDisabled || AppStore.Instance.backendService?.serverFeatureFlags === CARTA.ServerFeatureFlags.READ_ONLY) {
+                if (AppStore.Instance.appendFileDisabled || AppStore.Instance.backendService?.serverFeatureFlags === CARTA.ServerFeatureFlags.READ_ONLY || AppStore.Instance.activeImage?.type !== ImageType.FRAME) {
                     return;
                 }
                 break;
@@ -191,7 +192,7 @@ export class FileBrowserStore {
     };
 
     @flow.bound
-    *getFileList(directory: string = "") {
+    *getFileList(directory: string | null = "") {
         const appStore = AppStore.Instance;
 
         this.loadingList = true;
@@ -225,7 +226,7 @@ export class FileBrowserStore {
     }
 
     @flow.bound
-    *getFileInfo(directory: string, file: string, hdu: string) {
+    *getFileInfo(directory: string | null | undefined, file: string | null | undefined, hdu: string | undefined) {
         const backendService = BackendService.Instance;
         this.loadingInfo = true;
         this.fileInfoResp = false;
@@ -236,7 +237,7 @@ export class FileBrowserStore {
             const res = yield backendService.getFileInfo(directory, file, hdu);
             if (res.fileInfo && this.selectedFile && res.fileInfo.name === this.selectedFile.name) {
                 this.HDUfileInfoExtended = res.fileInfoExtended;
-                const HDUList = Object.keys(this.HDUfileInfoExtended);
+                const HDUList = Object.keys(this.HDUfileInfoExtended ?? {});
                 if (HDUList?.length >= 1) {
                     this.selectedHDU = HDUList[0];
                 }
@@ -253,7 +254,7 @@ export class FileBrowserStore {
     }
 
     @flow.bound
-    *getRegionFileInfo(directory: string, file: string) {
+    *getRegionFileInfo(directory: string | null | undefined, file: string | null | undefined) {
         const backendService = BackendService.Instance;
         this.loadingInfo = true;
         this.fileInfoResp = false;
@@ -276,7 +277,7 @@ export class FileBrowserStore {
         }
     }
 
-    @flow.bound *getCatalogFileInfo(directory: string, filename: string) {
+    @flow.bound *getCatalogFileInfo(directory: string | null | undefined, filename: string | null | undefined) {
         const backendService = BackendService.Instance;
         this.loadingInfo = true;
         this.fileInfoResp = false;
@@ -320,16 +321,16 @@ export class FileBrowserStore {
      * @param hdu - The Header Data Unit (HDU) identifier of the file.
      * @returns A promise resolving to the Stokes file information.
      */
-    getStokesFile = async (directory: string, file: string, hdu: string): Promise<CARTA.IStokesFile> => {
+    getStokesFile = async (directory: string, file: string, hdu: string): Promise<CARTA.IStokesFile | undefined> => {
         try {
             const response = await this.getConcatFilesHeader(directory, file, hdu);
             // In fileInfoExtended: { [k: string]: CARTA.IFileInfoExtended }, sometimes k is " "
-            const k = Object.keys(response.info)[0];
+            const k = Object.keys(response.info ?? {})[0];
             return {
                 directory,
                 file,
                 hdu,
-                polarizationType: FileBrowserStore.GetStokesType(response.info[k], response.file)
+                polarizationType: FileBrowserStore.GetStokesType(response.info?.[k], response.file)
             };
         } catch (err) {
             console.log(err);
@@ -345,9 +346,9 @@ export class FileBrowserStore {
      * @param hdu - The Header Data Unit (HDU) identifier of the file.
      * @returns A promise resolving to the header information.
      */
-    private getConcatFilesHeader = async (directory: string, file: string, hdu: string): Promise<{file: string; info: CARTA.IFileInfoExtended}> => {
+    private getConcatFilesHeader = async (directory: string, file: string, hdu: string): Promise<{file: string | null | undefined; info: CARTA.IFileInfoExtended | null | undefined}> => {
         const res = await BackendService.Instance.getFileInfo(directory, file, hdu);
-        return {file: res.fileInfo.name, info: res.fileInfoExtended};
+        return {file: res.fileInfo?.name, info: res.fileInfoExtended};
     };
 
     /**
@@ -357,7 +358,7 @@ export class FileBrowserStore {
      * @param file - The name of the file.
      * @returns The Stokes type of the file.
      */
-    private static GetStokesType = (fileInfoExtended: CARTA.IFileInfoExtended, file: string): CARTA.PolarizationType => {
+    private static GetStokesType = (fileInfoExtended: CARTA.IFileInfoExtended | null | undefined, file: string | null | undefined): CARTA.PolarizationType => {
         let type = FileBrowserStore.GetTypeFromHeader(fileInfoExtended?.headerEntries);
         if (type === CARTA.PolarizationType.POLARIZATION_TYPE_NONE) {
             type = FileBrowserStore.GetTypeFromName(file);
@@ -365,15 +366,15 @@ export class FileBrowserStore {
         return type;
     };
 
-    private static GetTypeFromHeader = (headers: CARTA.IHeaderEntry[]): CARTA.PolarizationType => {
+    private static GetTypeFromHeader = (headers: CARTA.IHeaderEntry[] | null | undefined): CARTA.PolarizationType => {
         let type = CARTA.PolarizationType.POLARIZATION_TYPE_NONE;
 
-        const ctype = headers?.find(obj => obj.value.toUpperCase() === "STOKES");
-        if (ctype && ctype.name.indexOf("CTYPE") !== -1) {
-            const index = ctype.name.substring(5);
-            const crpixHeader = headers.find(entry => entry.name.indexOf(`CRPIX${index}`) !== -1);
-            const crvalHeader = headers.find(entry => entry.name.indexOf(`CRVAL${index}`) !== -1);
-            const cdeltHeader = headers.find(entry => entry.name.indexOf(`CDELT${index}`) !== -1);
+        const ctype = headers?.find(obj => obj.value?.toUpperCase() === "STOKES");
+        if (headers && ctype && ctype.name?.indexOf("CTYPE") !== -1) {
+            const index = ctype.name?.substring(5);
+            const crpixHeader = headers.find(entry => entry.name?.indexOf(`CRPIX${index}`) !== -1);
+            const crvalHeader = headers.find(entry => entry.name?.indexOf(`CRVAL${index}`) !== -1);
+            const cdeltHeader = headers.find(entry => entry.name?.indexOf(`CDELT${index}`) !== -1);
             const polarizationIndex = getHeaderNumericValue(crvalHeader) + (1 - getHeaderNumericValue(crpixHeader)) * getHeaderNumericValue(cdeltHeader);
             if (polarizationIndex) {
                 const polarizationString = STANDARD_POLARIZATIONS.get(polarizationIndex);
@@ -386,7 +387,7 @@ export class FileBrowserStore {
         return type;
     };
 
-    private static GetTypeFromName = (fileName: string): CARTA.PolarizationType => {
+    private static GetTypeFromName = (fileName: string | null | undefined): CARTA.PolarizationType => {
         let type = CARTA.PolarizationType.POLARIZATION_TYPE_NONE;
         const words = fileName?.split(/[._]/);
         words?.forEach(word => {
@@ -407,15 +408,15 @@ export class FileBrowserStore {
         }
 
         if (this.browserMode === BrowserMode.File) {
-            this.getFileInfo(fileList.directory, file.fileInfo.name, file.hdu);
+            this.getFileInfo(fileList?.directory, file.fileInfo?.name, file.hdu);
         } else if (this.browserMode === BrowserMode.SaveFile) {
-            this.getFileInfo(fileList.directory, file.fileInfo.name, file.hdu);
-            this.saveFilename = file.fileInfo.name;
+            this.getFileInfo(fileList?.directory, file.fileInfo?.name, file.hdu);
+            this.saveFilename = file.fileInfo?.name;
         } else if (this.browserMode === BrowserMode.Catalog) {
-            this.getCatalogFileInfo(fileList.directory, file.fileInfo.name);
+            this.getCatalogFileInfo(fileList?.directory, file.fileInfo?.name);
         } else {
-            this.setExportFilename(file.fileInfo.name);
-            this.getRegionFileInfo(fileList.directory, file.fileInfo.name);
+            this.setExportFilename(file.fileInfo?.name);
+            this.getRegionFileInfo(fileList?.directory, file.fileInfo?.name);
         }
     };
 
@@ -445,7 +446,7 @@ export class FileBrowserStore {
     }
 
     @action selectHDU = (hdu: string) => {
-        if (hdu in this.HDUfileInfoExtended) {
+        if (hdu in (this.HDUfileInfoExtended ?? {})) {
             this.selectedHDU = hdu;
         }
     };
@@ -469,9 +470,9 @@ export class FileBrowserStore {
             this.startingDirectory = directory;
         } else {
             if (this.browserMode === BrowserMode.Catalog) {
-                this.startingDirectory = this.catalogFileList.directory;
+                this.startingDirectory = this.catalogFileList?.directory;
             } else {
-                this.startingDirectory = this.fileList.directory;
+                this.startingDirectory = this.fileList?.directory;
             }
         }
     }
@@ -487,7 +488,7 @@ export class FileBrowserStore {
         }
     }
 
-    @action setExportFilename = (filename: string) => {
+    @action setExportFilename = (filename: string | null | undefined) => {
         this.exportFilename = filename;
     };
 
@@ -580,9 +581,41 @@ export class FileBrowserStore {
         this.saveSpectralEnd = end;
     };
 
-    @action setSelectedFiles = (selection: ISelectedFile[]) => {
+    @flow.bound *setSelectedFiles(selection: ISelectedFile[]) {
         this.selectedFiles = selection;
-    };
+
+        // for dynamic layout
+        if (PreferenceStore.Instance.dynamicLayoutEnable) {
+            this.selectedFilesCtypes = yield this.selectedFilesCtypeInfo();
+            if (this.selectedFiles.length > 0) {
+                AppStore.Instance.dynamicLayoutStore.matchLayoutMapping(this.selectedFilesCtypes);
+            }
+        }
+    }
+
+    @flow.bound *selectedFilesCtypeInfo() {
+        const backendService = BackendService.Instance;
+
+        const filesCtype: string[] = [];
+        let filesCtypeRank: number[] = [];
+
+        for (let i = 0; i < this.selectedFiles.length; i++) {
+            const res = yield backendService.getFileInfo(this.fileList?.directory, this.selectedFiles[i].fileInfo?.name, this.selectedFiles[i].hdu);
+
+            if (!res.fileInfo || !res.fileInfoExtended) {
+                continue;
+            }
+
+            const HDUList = Object.keys(res.fileInfoExtended ?? {});
+            const fileInfo = HDUList?.length >= 1 ? res.fileInfoExtended[HDUList[0]] : res.fileInfoExtended;
+            const ctypeInfo = FileCtypeInfo(fileInfo.headerEntries);
+
+            filesCtype.push(ctypeInfo.ctype);
+            filesCtypeRank.push(ctypeInfo.rank);
+        }
+
+        return {ctype: filesCtype, rank: filesCtypeRank};
+    }
 
     @action showLoadingDialog = () => {
         this.isLoadingDialogOpen = true;
@@ -645,19 +678,21 @@ export class FileBrowserStore {
         }
     };
 
-    @computed get saveRestFreqInHz(): number {
+    @computed get saveRestFreqInHz(): number | undefined {
         if (!isFinite(this.saveRestFreq.value)) {
             return undefined;
         }
         return Freq.convertUnitToHz(this.saveRestFreq);
     }
 
-    @computed get HDUList(): IOptionProps[] {
+    @computed get HDUList(): OptionProps[] | null {
         return this.HDUfileInfoExtended
             ? Object.keys(this.HDUfileInfoExtended)?.map(hdu => {
                   // hdu extension name is in field 3 of fileInfoExtended computed entries
                   const extName =
-                      this.HDUfileInfoExtended[hdu]?.computedEntries?.length >= 3 && this.HDUfileInfoExtended[hdu].computedEntries[2]?.name === "Extension name" ? `: ${this.HDUfileInfoExtended[hdu].computedEntries[2]?.value}` : "";
+                      (this.HDUfileInfoExtended?.[hdu]?.computedEntries?.length ?? NaN) >= 3 && this.HDUfileInfoExtended?.[hdu].computedEntries?.[2]?.name === "Extension name"
+                          ? `: ${this.HDUfileInfoExtended[hdu].computedEntries?.[2]?.value}`
+                          : "";
                   return {
                       label: `${hdu}${extName}`,
                       value: hdu
@@ -666,8 +701,8 @@ export class FileBrowserStore {
             : null;
     }
 
-    @computed get fileInfoExtended(): CARTA.IFileInfoExtended {
-        return this.HDUfileInfoExtended && this.selectedHDU in this.HDUfileInfoExtended ? this.HDUfileInfoExtended[this.selectedHDU] : null;
+    @computed get fileInfoExtended(): CARTA.IFileInfoExtended | null {
+        return this.HDUfileInfoExtended && this.selectedHDU !== null && this.selectedHDU in this.HDUfileInfoExtended ? this.HDUfileInfoExtended[this.selectedHDU] : null;
     }
 
     @computed get isComplexImage() {
@@ -699,7 +734,7 @@ export class FileBrowserStore {
         return headers;
     }
 
-    @computed get getfileListByMode(): CARTA.IFileListResponse | CARTA.ICatalogListResponse {
+    @computed get getfileListByMode(): CARTA.IFileListResponse | CARTA.ICatalogListResponse | null {
         switch (this.browserMode) {
             case BrowserMode.Catalog:
                 return this.catalogFileList;
@@ -724,10 +759,10 @@ export class FileBrowserStore {
     }
 
     @computed get catalogHeaderDataset(): {columnHeaders: Array<CARTA.CatalogHeader>; columnsData: Map<number, ProcessedColumnData>} {
-        const nameData = [];
-        const unitData = [];
-        const typeData = [];
-        const descriptionData = [];
+        const nameData: (string | null | undefined)[] = [];
+        const unitData: (string | null | undefined)[] = [];
+        const typeData: string[] = [];
+        const descriptionData: (string | null | undefined)[] = [];
 
         for (let index = 0; index < this.catalogHeaders.length; index++) {
             const catalogHeader = this.catalogHeaders[index];

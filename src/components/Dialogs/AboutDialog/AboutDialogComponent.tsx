@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Classes, IDialogProps} from "@blueprintjs/core";
+import {Classes, DialogProps} from "@blueprintjs/core";
 import {observer} from "mobx-react";
 
 import {DraggableDialogComponent} from "components/Dialogs";
@@ -18,7 +18,7 @@ export class AboutDialogComponent extends React.Component {
     public render() {
         const dialogStore = DialogStore.Instance;
 
-        const dialogProps: IDialogProps = {
+        const dialogProps: DialogProps = {
             icon: "info-sign",
             backdropClassName: "minimal-dialog-backdrop",
             canOutsideClickClose: true,
@@ -92,7 +92,7 @@ export class AboutDialogComponent extends React.Component {
                         </li>
                         <li>
                             Documentation is available{" "}
-                            <a href="https://carta.readthedocs.io/en/4.1" rel="noopener noreferrer" target="_blank">
+                            <a href="https://carta.readthedocs.io/en/5.0" rel="noopener noreferrer" target="_blank">
                                 online
                             </a>
                         </li>

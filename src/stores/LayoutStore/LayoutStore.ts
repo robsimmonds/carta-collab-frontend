@@ -4,9 +4,14 @@ import {action, computed, flow, makeObservable, observable} from "mobx";
 import {AppToaster, SuccessToast} from "components/Shared";
 import {LayoutConfig, PresetLayout} from "models";
 import {ApiService} from "services";
-import {AlertStore, AppStore, DialogId} from "stores";
+import {AlertStore, AppStore} from "stores";
 
 const MAX_LAYOUT = 10;
+
+export enum LayoutDialogMode {
+    DynamicLayout,
+    Layout
+}
 
 export class LayoutStore {
     private static staticInstance: LayoutStore;
@@ -22,35 +27,28 @@ export class LayoutStore {
     private layoutNameToBeSaved: string;
 
     // self-defined structure: {layoutName: config, layoutName: config, ...}
-    @observable dockedLayout: GoldenLayout;
+    @observable dockedLayout: GoldenLayout | null;
     @observable currentLayoutName: string;
     @observable private layouts: any;
     @observable supportsServer: boolean;
-    @observable oldLayoutName: string;
-
-    @computed get isSave(): boolean {
-        return !this.oldLayoutName;
-    }
+    @observable layoutDialogMode: LayoutDialogMode | undefined;
 
     private constructor() {
         makeObservable<LayoutStore, "layouts">(this);
         this.dockedLayout = null;
         this.layouts = {};
         this.supportsServer = false;
-        this.oldLayoutName = "";
         this.initLayoutsFromPresets();
+
+        this.layoutDialogMode = LayoutDialogMode.Layout;
     }
 
     public layoutExists = (layoutName: string): boolean => {
-        return layoutName && this.allLayoutNames.includes(layoutName);
+        return layoutName.length > 0 && this.allLayoutNames.includes(layoutName);
     };
 
     public setLayoutToBeSaved = (layoutName: string) => {
         this.layoutNameToBeSaved = layoutName ? layoutName : "Empty";
-    };
-
-    public setOldLayoutName = (oldLayoutName: string) => {
-        this.oldLayoutName = oldLayoutName;
     };
 
     @flow.bound *fetchLayouts() {
@@ -135,8 +133,11 @@ export class LayoutStore {
             },
             appStore.getAppContainer()
         );
-        appStore.widgetsStore.initLayoutWithWidgets(this.dockedLayout);
-        this.dockedLayout.init();
+        if (this.dockedLayout) {
+            appStore.widgetsStore.initLayoutWithWidgets(this.dockedLayout);
+            this.dockedLayout.init();
+            appStore.widgetsStore.updateImageWidgetTitle(this.dockedLayout);
+        }
         this.currentLayoutName = layoutName;
 
         return true;
@@ -198,6 +199,7 @@ export class LayoutStore {
 
     @flow.bound *renameLayout(oldName: string, newName: string) {
         const appStore = AppStore.Instance;
+        const dynamicLayout = appStore.dynamicLayoutStore;
 
         if (!this.layouts || !newName || !this.dockedLayout) {
             appStore.alertStore.showAlert("Save layout failed! Empty layouts or name.");
@@ -219,20 +221,20 @@ export class LayoutStore {
             return;
         }
 
-        appStore.dialogStore.hideDialog(DialogId.Layout);
-
         // save layout to layouts[] & server/local storage
         const configToSave = this.layouts[oldName];
         this.layouts[newName] = configToSave;
         if (!PresetLayout.isPreset(this.layoutNameToBeSaved)) {
             try {
                 const success = yield appStore.apiService.setLayout(newName, configToSave);
+
                 if (success) {
                     const success = yield appStore.apiService.clearLayout(oldName);
                     if (success) {
                         delete this.layouts[oldName];
                     }
                     this.handleRenameResult(oldName, newName, success);
+                    yield dynamicLayout.modifyLayoutMapping(oldName, newName);
                 }
             } catch (err) {
                 console.log(err);
@@ -254,20 +256,26 @@ export class LayoutStore {
 
     @flow.bound *deleteLayout(layoutName: string) {
         const appStore = AppStore.Instance;
+        const dynamicLayout = appStore.dynamicLayoutStore;
+
         if (!layoutName || !this.layoutExists(layoutName)) {
             appStore.alertStore.showAlert(`Cannot delete layout ${layoutName}! It does not exist.`);
             return;
         }
 
-        try {
-            const success = yield appStore.apiService.clearLayout(layoutName);
-            if (success) {
-                delete this.layouts[layoutName];
+        const confirmed = yield appStore.alertStore.showInteractiveAlert(`Do you delete layout ${layoutName}?`);
+        if (confirmed) {
+            try {
+                const success = yield appStore.apiService.clearLayout(layoutName);
+                yield dynamicLayout.deleteLayoutMappingByLayoutName(layoutName);
+                if (success) {
+                    delete this.layouts[layoutName];
+                }
+                this.handleDeleteResult(layoutName, success);
+            } catch (err) {
+                console.log(err);
+                this.handleDeleteResult(layoutName, false);
             }
-            this.handleDeleteResult(layoutName, success);
-        } catch (err) {
-            console.log(err);
-            this.handleDeleteResult(layoutName, false);
         }
     }
 

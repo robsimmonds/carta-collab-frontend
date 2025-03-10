@@ -1,12 +1,12 @@
 import * as React from "react";
-import {Button, Collapse, Divider, FormGroup, HTMLSelect, InputGroup, MenuItem, Switch, Tab, TabId, Tabs} from "@blueprintjs/core";
+import {Button, Classes, Collapse, Divider, FormGroup, HTMLSelect, InputGroup, MenuItem, Position, Switch, Tab, TabId, Tabs, Tooltip} from "@blueprintjs/core";
 import {ItemRenderer, Select} from "@blueprintjs/select";
 import * as AST from "ast_wrapper";
 import classNames from "classnames";
 import {action, autorun, makeObservable, observable} from "mobx";
 import {observer} from "mobx-react";
 
-import {AutoColorPickerComponent, CoordinateComponent, CoordNumericInput, InputType, SafeNumericInput, SpectralSettingsComponent} from "components/Shared";
+import {AutoColorPickerComponent, CoordinateComponent, CoordNumericInput, InputType, SafeNumericInput, ScrollShadow, SpectralSettingsComponent} from "components/Shared";
 import {ImagePanelMode} from "models";
 import {AppStore, BeamType, DefaultWidgetConfig, HelpType, LabelType, NUMBER_FORMAT_LABEL, NumberFormatType, PreferenceKeys, SystemType, WidgetProps} from "stores";
 import {ColorbarStore, CoordinateMode} from "stores/Frame";
@@ -62,7 +62,7 @@ export class Font {
 }
 
 const astFonts: Font[] = AST.fonts.map((x, i) => new Font(x, i));
-const FontSelect = Select.ofType<Font>();
+const FontSelect = Select<Font>;
 
 export const renderFont: ItemRenderer<Font> = (font, {handleClick, modifiers, query}) => {
     return <MenuItem active={modifiers.active} disabled={modifiers.disabled} key={font.id} onClick={handleClick} text={<span style={{fontFamily: font.family, fontWeight: font.weight, fontStyle: font.style}}>{font.name}</span>} />;
@@ -123,6 +123,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
 
     public render() {
         const appStore = AppStore.Instance;
+        const frame = appStore.channelMapStore.channelMapEnabled && appStore.channelMapStore.masterFrame ? appStore.channelMapStore.masterFrame : appStore.activeFrame;
         const overlayStore = appStore.overlayStore;
         const global = overlayStore.global;
         const title = overlayStore.title;
@@ -143,10 +144,9 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
         const disabledIfExterior = !interior && "Does not apply to exterior labelling.";
         const disabledIfNoWcs = !global.validWcs && "This image has no valid WCS data.";
 
-        const frame = appStore.activeFrame;
         const isPVImage = frame?.isPVImage;
 
-        const getFovInfoString = (value: number, valueWcs: string) => {
+        const getInfoString = (value: number, valueWcs: string) => {
             return this.panAndZoomCoord === CoordinateMode.Image ? `WCS: ${valueWcs}` : `Image: ${toFixed(value, 3)} px`;
         };
         const fovLabelInfo = this.panAndZoomCoord === CoordinateMode.Image ? "(px)" : "";
@@ -165,7 +165,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                         onChangeWcs={val => frame?.setCenterWcs(val, frame?.centerWCS?.y)}
                         wcsDisabled={isPVImage}
                     />
-                    <span className="info-string">{getFovInfoString(frame?.center?.x, frame?.centerWCS?.x)}</span>
+                    <span className="info-string">{getInfoString(frame?.center?.x, frame?.centerWCS?.x)}</span>
                 </FormGroup>
                 <FormGroup inline={true} label="Center (Y)" labelInfo={fovLabelInfo}>
                     <CoordNumericInput
@@ -177,7 +177,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                         onChangeWcs={val => frame?.setCenterWcs(frame?.centerWCS?.x, val)}
                         wcsDisabled={isPVImage}
                     />
-                    <span className="info-string">{getFovInfoString(frame?.center?.y, frame?.centerWCS?.y)}</span>
+                    <span className="info-string">{getInfoString(frame?.center?.y, frame?.centerWCS?.y)}</span>
                 </FormGroup>
                 <FormGroup inline={true} label="Size (X)" labelInfo={fovLabelInfo}>
                     <CoordNumericInput
@@ -190,7 +190,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                         wcsDisabled={isPVImage}
                         customPlaceholder="Width"
                     />
-                    <span className="info-string">{getFovInfoString(frame?.fovSize?.x, frame?.fovSizeWCS?.x)}</span>
+                    <span className="info-string">{getInfoString(frame?.fovSize?.x, frame?.fovSizeWCS?.x)}</span>
                 </FormGroup>
                 <FormGroup inline={true} label="Size (Y)" labelInfo={fovLabelInfo}>
                     <CoordNumericInput
@@ -203,8 +203,42 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                         wcsDisabled={isPVImage}
                         customPlaceholder="Height"
                     />
-                    <span className="info-string">{getFovInfoString(frame?.fovSize?.y, frame?.fovSizeWCS?.y)}</span>
+                    <span className="info-string">{getInfoString(frame?.fovSize?.y, frame?.fovSizeWCS?.y)}</span>
                 </FormGroup>
+                <FormGroup inline={true} label="Offset coordinates">
+                    <Switch checked={frame?.isOffsetCoord} disabled={frame?.isPVImage || frame?.isSwappedZ || frame?.isUVImage} onChange={frame?.toggleOffsetCoord} />
+                    <Collapse isOpen={frame?.isOffsetCoord}>
+                        <Tooltip content="Set offset to current view center" position={Position.BOTTOM} hoverOpenDelay={300}>
+                            <Button icon="locate" disabled={!frame?.isOffsetCoord} onClick={() => frame?.updateOffsetCenter()} />
+                        </Tooltip>
+                    </Collapse>
+                </FormGroup>
+                <Collapse isOpen={frame?.isOffsetCoord}>
+                    <FormGroup inline={true} label="Offset center (X)" labelInfo={fovLabelInfo}>
+                        <CoordNumericInput
+                            coord={this.panAndZoomCoord}
+                            inputType={InputType.XCoord}
+                            value={frame?.offsetCenter?.x}
+                            onChange={val => frame?.setOffsetCenter(val, frame?.offsetCenter?.y)}
+                            valueWcs={frame?.offsetCenterWCS?.x}
+                            onChangeWcs={val => frame?.setOffsetCenterWcs(val, frame?.offsetCenterWCS?.y)}
+                            wcsDisabled={isPVImage}
+                        />
+                        <span className="info-string">{getInfoString(frame?.offsetCenter?.x, frame?.offsetCenterWCS?.x)}</span>
+                    </FormGroup>
+                    <FormGroup inline={true} label="Offset center (Y)" labelInfo={fovLabelInfo}>
+                        <CoordNumericInput
+                            coord={this.panAndZoomCoord}
+                            inputType={InputType.YCoord}
+                            value={frame?.offsetCenter?.y}
+                            onChange={val => frame?.setOffsetCenter(frame?.offsetCenter?.x, val)}
+                            valueWcs={frame?.offsetCenterWCS?.y}
+                            onChangeWcs={val => frame?.setOffsetCenterWcs(frame?.offsetCenterWCS?.x, val)}
+                            wcsDisabled={isPVImage}
+                        />
+                        <span className="info-string">{getInfoString(frame?.offsetCenter?.y, frame?.offsetCenterWCS?.y)}</span>
+                    </FormGroup>
+                </Collapse>
             </div>
         );
 
@@ -279,7 +313,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                 </FormGroup>
                 <Collapse isOpen={title.customText}>
                     <FormGroup inline={true} label="Text" labelInfo="(Current image only)" disabled={!title.visible}>
-                        <InputGroup disabled={!title.visible} value={appStore.activeFrame?.titleCustomText} placeholder="Enter title text" onChange={ev => appStore.activeFrame?.setTitleCustomText(ev.currentTarget.value)} />
+                        <InputGroup disabled={!title.visible} value={appStore.activeImage?.store?.titleCustomText} placeholder="Enter title text" onChange={ev => appStore.activeImage?.store?.setTitleCustomText(ev.currentTarget.value)} />
                     </FormGroup>
                 </Collapse>
                 <FormGroup inline={true} label="Custom color" disabled={!title.visible}>
@@ -343,7 +377,17 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                     </FormGroup>
                 </Collapse>
                 <FormGroup inline={true} label="Width" labelInfo="(px)" disabled={!grid.visible}>
-                    <SafeNumericInput placeholder="Width" min={0.001} value={grid.width} stepSize={0.5} minorStepSize={0.1} majorStepSize={1} disabled={!grid.visible} onValueChange={(value: number) => grid.setWidth(value)} />
+                    <SafeNumericInput
+                        placeholder="Width"
+                        min={0.001}
+                        value={grid.width}
+                        stepSize={0.5}
+                        minorStepSize={0.1}
+                        majorStepSize={1}
+                        disabled={!grid.visible}
+                        onValueChange={(value: number) => grid.setWidth(value)}
+                        data-testid="image-view-settings-grid-width-input"
+                    />
                 </FormGroup>
                 <FormGroup inline={true} label="Custom gap" disabled={!grid.visible}>
                     <Switch checked={grid.customGap} disabled={!grid.visible} onChange={ev => grid.setCustomGap(ev.currentTarget.checked)} />
@@ -459,13 +503,16 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
         );
 
         const labelsPanel = (
-            <div className="panel-container">
+            <div className="panel-labels">
                 <FormGroup inline={true} label="Visible">
                     <Switch checked={labels.visible} onChange={ev => labels.setVisible(ev.currentTarget.checked)} />
                 </FormGroup>
                 <FormGroup inline={true} className="font-group" label="Font" disabled={!labels.visible}>
                     {this.fontSelect(labels.visible, labels.font, labels.setFont)}
                     <SafeNumericInput min={7} max={96} placeholder="Font size" value={labels.fontSize} disabled={!labels.visible} onValueChange={(value: number) => labels.setFontSize(value)} />
+                </FormGroup>
+                <FormGroup inline={true} label="Show RA/Dec reference" disabled={!labels.visible}>
+                    <Switch checked={labels.raDecReference} disabled={!labels.visible} onChange={ev => labels.setRaDecReference(ev.currentTarget.checked)} />
                 </FormGroup>
                 <FormGroup inline={true} label="Custom text" disabled={!labels.visible}>
                     <Switch checked={labels.customText} disabled={!labels.visible} onChange={ev => labels.setCustomText(ev.currentTarget.checked)} />
@@ -727,7 +774,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                     <SafeNumericInput
                         placeholder="Position (X)"
                         min={0}
-                        max={overlayStore.renderWidth}
+                        max={AppStore.Instance.overlayStore.renderWidth}
                         value={beamSettings.shiftX}
                         stepSize={5}
                         minorStepSize={1}
@@ -739,7 +786,7 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
                     <SafeNumericInput
                         placeholder="Position (Y)"
                         min={0}
-                        max={overlayStore.renderHeight}
+                        max={AppStore.Instance.overlayStore.renderHeight}
                         value={beamSettings.shiftY}
                         stepSize={5}
                         minorStepSize={1}
@@ -759,23 +806,23 @@ export class ImageViewSettingsPanelComponent extends React.Component<WidgetProps
             </div>
         ) : null;
 
-        const className = classNames("image-view-settings", {"bp3-dark": appStore.darkTheme});
+        const className = classNames("image-view-settings", {[Classes.DARK]: appStore.darkTheme});
 
         return (
             <div className={className}>
                 <Tabs id="imageViewSettingsTabs" vertical={true} selectedTabId={this.selectedTab} onChange={this.setSelectedTab}>
-                    <Tab id={ImageViewSettingsPanelTabs.PAN_AND_ZOOM} title={ImageViewSettingsPanelTabs.PAN_AND_ZOOM} panel={panAndZoomPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.GLOBAL} title={ImageViewSettingsPanelTabs.GLOBAL} panel={globalPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.TITLE} title={ImageViewSettingsPanelTabs.TITLE} panel={titlePanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.TICKS} title={ImageViewSettingsPanelTabs.TICKS} panel={ticksPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.GRIDS} title={ImageViewSettingsPanelTabs.GRIDS} panel={gridPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.BORDER} title={ImageViewSettingsPanelTabs.BORDER} panel={borderPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.AXES} title={ImageViewSettingsPanelTabs.AXES} panel={axesPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.NUMBERS} title={ImageViewSettingsPanelTabs.NUMBERS} panel={numbersPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.LABELS} title={ImageViewSettingsPanelTabs.LABELS} panel={labelsPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.COLORBAR} title={ImageViewSettingsPanelTabs.COLORBAR} panel={colorbarPanel} />
-                    <Tab id={ImageViewSettingsPanelTabs.BEAM} title={ImageViewSettingsPanelTabs.BEAM} panel={beamPanel} disabled={appStore.frameNum <= 0} />
-                    <Tab id={ImageViewSettingsPanelTabs.CONVERSION} title={ImageViewSettingsPanelTabs.CONVERSION} panel={spectralPanel} disabled={!isPVImage} />
+                    <Tab id={ImageViewSettingsPanelTabs.PAN_AND_ZOOM} title={ImageViewSettingsPanelTabs.PAN_AND_ZOOM} panel={<ScrollShadow>{panAndZoomPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.GLOBAL} title={ImageViewSettingsPanelTabs.GLOBAL} panel={<ScrollShadow>{globalPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.TITLE} title={ImageViewSettingsPanelTabs.TITLE} panel={<ScrollShadow>{titlePanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.TICKS} title={ImageViewSettingsPanelTabs.TICKS} panel={<ScrollShadow>{ticksPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.GRIDS} title={ImageViewSettingsPanelTabs.GRIDS} panel={<ScrollShadow>{gridPanel}</ScrollShadow>} data-testid="image-view-settings-grid-tab-title" />
+                    <Tab id={ImageViewSettingsPanelTabs.BORDER} title={ImageViewSettingsPanelTabs.BORDER} panel={<ScrollShadow>{borderPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.AXES} title={ImageViewSettingsPanelTabs.AXES} panel={<ScrollShadow>{axesPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.NUMBERS} title={ImageViewSettingsPanelTabs.NUMBERS} panel={<ScrollShadow>{numbersPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.LABELS} title={ImageViewSettingsPanelTabs.LABELS} panel={<ScrollShadow>{labelsPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.COLORBAR} title={ImageViewSettingsPanelTabs.COLORBAR} panel={<ScrollShadow>{colorbarPanel}</ScrollShadow>} />
+                    <Tab id={ImageViewSettingsPanelTabs.BEAM} title={ImageViewSettingsPanelTabs.BEAM} panel={<ScrollShadow>{beamPanel}</ScrollShadow>} disabled={appStore.frameNum <= 0} />
+                    <Tab id={ImageViewSettingsPanelTabs.CONVERSION} title={ImageViewSettingsPanelTabs.CONVERSION} panel={<ScrollShadow>{spectralPanel}</ScrollShadow>} disabled={!isPVImage} />
                 </Tabs>
             </div>
         );

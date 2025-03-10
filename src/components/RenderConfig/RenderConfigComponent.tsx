@@ -1,14 +1,13 @@
 import * as React from "react";
-import ReactResizeDetector from "react-resize-detector";
-import {Button, ButtonGroup, Colors, FormGroup, HTMLSelect, IOptionProps, NonIdealState} from "@blueprintjs/core";
+import {Button, ButtonGroup, Colors, FormGroup, HTMLSelect, NonIdealState, OptionProps} from "@blueprintjs/core";
 import {CARTA} from "carta-protobuf";
 import * as _ from "lodash";
 import {action, autorun, computed, makeObservable, observable} from "mobx";
 import {observer} from "mobx-react";
 
 import {TaskProgressDialogComponent} from "components/Dialogs";
-import {LinePlotComponent, LinePlotComponentProps, PlotType, ProfilerInfoComponent, SafeNumericInput} from "components/Shared";
-import {Point2D} from "models";
+import {LinePlotComponent, LinePlotComponentProps, PlotType, ProfilerInfoComponent, ResizeDetector, SafeNumericInput, ScrollShadow} from "components/Shared";
+import {ImageType, Point2D} from "models";
 import {AppStore, DefaultWidgetConfig, HelpType, WidgetProps, WidgetsStore} from "stores";
 import {FrameStore, RenderConfigStore} from "stores/Frame";
 import {RenderConfigWidgetStore} from "stores/Widgets";
@@ -16,6 +15,7 @@ import {clamp, getColorForTheme, scaleValue, toExponential, toFixed} from "utili
 
 import {MultiPlotProps} from "../Shared/LinePlot/PlotContainer/PlotContainerComponent";
 
+import {ColorBlendingConfigComponent} from "./ColorBlendingConfigComponent/ColorBlendingConfigComponent";
 import {ColormapConfigComponent} from "./ColormapConfigComponent/ColormapConfigComponent";
 import {HistogramConfigComponent} from "./HistogramConfigComponent/HistogramConfigComponent";
 
@@ -30,7 +30,7 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
         return {
             id: "render-config",
             type: "render-config",
-            minWidth: 250,
+            minWidth: 350,
             minHeight: 225,
             defaultWidth: 650,
             defaultHeight: 225,
@@ -61,7 +61,7 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
     @computed get plotData(): {values: Array<Point2D>; xMin: number; xMax: number; yMin: number; yMax: number} {
         const frame = AppStore.Instance.activeFrame;
         if (frame && frame.renderConfig.histogram && frame.renderConfig.histogram.bins && frame.renderConfig.histogram.bins.length) {
-            const histogram = frame.renderConfig.histogram;
+            const histogram = AppStore.Instance.channelMapStore.channelMapEnabled && !frame.isPreview ? frame.renderConfig.channelMapHistogram : frame.renderConfig.histogram;
             let minIndex = 0;
             let maxIndex = histogram.bins.length - 1;
 
@@ -246,15 +246,25 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
 
     render() {
         const appStore = AppStore.Instance;
-        const frame = appStore.activeFrame;
+        const image = appStore.activeImage;
 
-        if (!frame || !this.widgetStore) {
+        if (!image || !this.widgetStore) {
             return (
                 <div className="render-config-container">
                     <NonIdealState icon={"folder-open"} title={"No file loaded"} description={"Load a file using the menu"} />
                 </div>
             );
         }
+
+        if (image.type === ImageType.COLOR_BLENDING) {
+            return (
+                <ResizeDetector onResize={this.onResize} throttleTime={1000}>
+                    <ColorBlendingConfigComponent widgetWidth={this.width} />
+                </ResizeDetector>
+            );
+        }
+
+        const frame = image.store;
 
         let unitString = "Value";
         if (frame && frame.requiredUnit) {
@@ -404,7 +414,14 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
         let percentileButtonsDiv, percentileSelectDiv;
         if (displayRankButtons) {
             const percentileRankButtons = RenderConfigStore.PERCENTILE_RANKS.map(rank => (
-                <Button small={true} key={rank} onClick={() => this.handlePercentileRankClick(rank)} active={frame.renderConfig.selectedPercentileVal === rank}>
+                <Button
+                    small={true}
+                    key={rank}
+                    onClick={() => this.handlePercentileRankClick(rank)}
+                    active={frame.renderConfig.selectedPercentileVal === rank}
+                    disabled={appStore.channelMapStore.channelMapEnabled}
+                    data-testid={"clip-button-" + rank}
+                >
                     {`${rank}%`}
                 </Button>
             ));
@@ -419,7 +436,7 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
                 </div>
             );
         } else {
-            const percentileRankOptions: IOptionProps[] = RenderConfigStore.PERCENTILE_RANKS.map(rank => ({label: `${rank}%`, value: rank}));
+            const percentileRankOptions: OptionProps[] = RenderConfigStore.PERCENTILE_RANKS.map(rank => ({label: `${rank}%`, value: rank}));
             percentileRankOptions.push({label: "Custom", value: -1});
             percentileSelectDiv = (
                 <div className="percentile-select">
@@ -431,44 +448,63 @@ export class RenderConfigComponent extends React.Component<WidgetProps> {
         }
 
         return (
-            <div className="render-config-container">
-                {this.width > histogramCutoff && (
-                    <div className="histogram-container">
-                        {displayRankButtons ? percentileButtonsDiv : percentileSelectDiv}
-                        <div className="histogram-plot">
-                            <LinePlotComponent {...linePlotProps} />
-                            {this.width >= histogramCutoff && <ProfilerInfoComponent info={this.genProfilerInfo()} />}
+            <ResizeDetector onResize={this.onResize} throttleTime={1000}>
+                <div className="render-config-container">
+                    {this.width > histogramCutoff && (
+                        <div className="histogram-container">
+                            {displayRankButtons ? percentileButtonsDiv : percentileSelectDiv}
+                            <div className="histogram-plot">
+                                <LinePlotComponent {...linePlotProps} />
+                                {this.width >= histogramCutoff && <ProfilerInfoComponent info={this.genProfilerInfo()} />}
+                            </div>
                         </div>
+                    )}
+                    <div className="options-container">
+                        <ScrollShadow>
+                            <div className="options-form">
+                                <HistogramConfigComponent
+                                    darkTheme={appStore.darkTheme}
+                                    renderConfig={frame.renderConfig}
+                                    onCubeHistogramSelected={this.handleCubeHistogramSelected}
+                                    showHistogramSelect={frame.frameInfo.fileInfoExtended.depth > 1}
+                                    disableHistogramSelect={appStore.animatorStore.animationActive}
+                                    warnOnCubeHistogram={(frame.frameInfo.fileFeatureFlags & CARTA.FileFeatureFlags.CUBE_HISTOGRAMS) === 0}
+                                />
+                                <FormGroup label={"Clip min"} inline={true}>
+                                    <SafeNumericInput
+                                        value={frame.renderConfig.scaleMinVal}
+                                        selectAllOnFocus={true}
+                                        buttonPosition={"none"}
+                                        onBlur={this.handleScaleMinChange}
+                                        onKeyDown={this.handleScaleMinChange}
+                                        data-testid="clip-min-input"
+                                    />
+                                </FormGroup>
+                                <FormGroup label={"Clip max"} inline={true}>
+                                    <SafeNumericInput
+                                        value={frame.renderConfig.scaleMaxVal}
+                                        selectAllOnFocus={true}
+                                        buttonPosition={"none"}
+                                        onBlur={this.handleScaleMaxChange}
+                                        onKeyDown={this.handleScaleMaxChange}
+                                        data-testid="clip-max-input"
+                                    />
+                                </FormGroup>
+                                <ColormapConfigComponent renderConfig={frame.renderConfig} />
+                                {this.width < histogramCutoff && percentileSelectDiv}
+                            </div>
+                        </ScrollShadow>
                     </div>
-                )}
-                <div className="options-container">
-                    <HistogramConfigComponent
-                        darkTheme={appStore.darkTheme}
-                        renderConfig={frame.renderConfig}
-                        onCubeHistogramSelected={this.handleCubeHistogramSelected}
-                        showHistogramSelect={frame.frameInfo.fileInfoExtended.depth > 1}
-                        disableHistogramSelect={appStore.animatorStore.animationActive}
-                        warnOnCubeHistogram={(frame.frameInfo.fileFeatureFlags & CARTA.FileFeatureFlags.CUBE_HISTOGRAMS) === 0}
+                    <TaskProgressDialogComponent
+                        isOpen={frame.renderConfig.useCubeHistogram && frame.renderConfig.cubeHistogramProgress < 1.0}
+                        progress={frame.renderConfig.cubeHistogramProgress}
+                        timeRemaining={appStore.estimatedTaskRemainingTime}
+                        cancellable={true}
+                        onCancel={this.handleCubeHistogramCancelled}
+                        text={"Calculating cube histogram"}
                     />
-                    <FormGroup label={"Clip min"} inline={true}>
-                        <SafeNumericInput value={frame.renderConfig.scaleMinVal} selectAllOnFocus={true} buttonPosition={"none"} onBlur={this.handleScaleMinChange} onKeyDown={this.handleScaleMinChange} />
-                    </FormGroup>
-                    <FormGroup label={"Clip max"} inline={true}>
-                        <SafeNumericInput value={frame.renderConfig.scaleMaxVal} selectAllOnFocus={true} buttonPosition={"none"} onBlur={this.handleScaleMaxChange} onKeyDown={this.handleScaleMaxChange} />
-                    </FormGroup>
-                    <ColormapConfigComponent renderConfig={frame.renderConfig} />
-                    {this.width < histogramCutoff && percentileSelectDiv}
                 </div>
-                <TaskProgressDialogComponent
-                    isOpen={frame.renderConfig.useCubeHistogram && frame.renderConfig.cubeHistogramProgress < 1.0}
-                    progress={frame.renderConfig.cubeHistogramProgress}
-                    timeRemaining={appStore.estimatedTaskRemainingTime}
-                    cancellable={true}
-                    onCancel={this.handleCubeHistogramCancelled}
-                    text={"Calculating cube histogram"}
-                />
-                <ReactResizeDetector handleWidth handleHeight onResize={this.onResize} refreshMode={"throttle"}></ReactResizeDetector>
-            </div>
+            </ResizeDetector>
         );
     }
 }

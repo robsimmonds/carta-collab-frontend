@@ -8,22 +8,10 @@
 }
 
 .colormap-select-popover {
-    .bp3-menu {
+    .#{$ns}-menu {
         max-height: 180px;
         overflow: auto;
         padding: 0;
-    }
-}
-
-.colormap-block {
-    width: 75px;
-    height: 15px;
-    image-rendering: pixelated;
-    -moz-image-rendering: crisp-edges;
-    border-radius: $pt-border-radius;
-    border: 1px solid $gray4;
-    &.bp3-dark {
-        border: 1px solid $gray2;
     }
 }
 
@@ -35,26 +23,31 @@
     .options-container {
         flex: 1 1 230px;
         min-width: 230px;
-        padding-right: 10px;
-        padding-top: 10px;
-        overflow-y: auto;
-        flex-wrap: nowrap;
-        display: flex;
-        flex-direction: column;
-        div {
-            margin-left: auto;
+
+        .options-form {
+            padding-right: 10px;
+            padding-top: 10px;
+            overflow-y: auto;
+            flex-wrap: nowrap;
+            display: flex;
+            flex-direction: column;
+
+            div {
+                margin-left: auto;
+            }
         }
+
         .percentile-select {
             margin-right: 0;
         }
 
-        .bp3-form-group {
+        .#{$ns}-form-group {
             float: right;
             margin-bottom: 5px;
-            .bp3-button {
+            .#{$ns}-button {
                 width: 130px;
             }
-            .bp3-label {
+            .#{$ns}-label {
                 margin-right: 5px;
             }
             .bias-contrast-button {
@@ -62,15 +55,15 @@
             }
         }
 
-        .bp3-numeric-input {
-            .bp3-input-group {
+        .#{$ns}-numeric-input {
+            .#{$ns}-input-group {
                 input {
                     width: 130px;
                 }
             }
         }
 
-        .bp3-input-group {
+        .#{$ns}-input-group {
             input {
                 width: 120px;
             }
@@ -82,17 +75,17 @@
         }
 
         .step-input {
-            .bp3-input-group input {
-                width: 102px;
+            .#{$ns}-input-group input {
+                width: 98px;
             }
 
-            .bp3-button {
+            .#{$ns}-button {
                 width: 30px;
             }
         }
 
         .nan-color-button {
-            .bp3-button {
+            .#{$ns}-button {
                 width: 50px;
             }
         }
@@ -116,10 +109,10 @@
 
 .percentile-select {
     margin: 5px auto auto 5px;
-    .bp3-form-group {
+    .#{$ns}-form-group {
         margin: 0;
     }
-    .bp3-button {
+    .#{$ns}-button {
         margin-left: 5px;
     }
 }

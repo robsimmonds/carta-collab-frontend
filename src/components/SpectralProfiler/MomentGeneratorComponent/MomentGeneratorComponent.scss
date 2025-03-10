@@ -1,16 +1,18 @@
+@import "~@blueprintjs/core/lib/scss/variables.scss";
+
 .moment-generator {
     display: block;
     flex-direction: row;
 
-    .bp3-numeric-input {
-        .bp3-input-group {
+    .#{$ns}-numeric-input {
+        .#{$ns}-input-group {
             width: 80px;
         }
     }
 
     .moment-panel {
         .image-region-select {
-            .bp3-html-select {
+            .#{$ns}-html-select {
                 width: 100%;
             }
 
@@ -32,10 +34,9 @@
             display: flex;
             flex-direction: row;
 
-            .bp3-form-group {
-                margin-right: 10px;
-                .bp3-label {
-                    margin: 0px;
+            .#{$ns}-form-group {
+                margin: 0px;
+                .#{$ns}-label {
                     width: 3em;
                 }
             }
@@ -48,6 +49,19 @@
 
         .moment-generate {
             float: right;
+        }
+
+        .freq-input {
+            display: flex;
+            flex-direction: row;
+
+            .#{$ns}-form-group {
+                margin-right: 10px;
+                .#{$ns}-input-group {
+                    min-width: 130px;
+                    width: 130px;
+                }
+            }
         }
     }
 }

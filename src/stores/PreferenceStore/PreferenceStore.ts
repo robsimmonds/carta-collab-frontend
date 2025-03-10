@@ -32,11 +32,11 @@ import {parseBoolean} from "utilities";
 export enum PreferenceKeys {
     SILENT_FILE_SORTING_STRING = "fileSortingString",
     SILENT_FILE_FILTERING_TYPE = "fileFilteringType",
+    SILENT_PV_AXES_ORDER_REVERSE = "pvAxesOrderReverse",
 
     GLOBAL_THEME = "theme",
     GLOBAL_AUTOLAUNCH = "autoLaunch",
     GLOBAL_FILE_FILTER_MODE = "fileFilterMode",
-    GLOBAL_LAYOUT = "layout",
     GLOBAL_CURSOR_POSITION = "cursorPosition",
     GLOBAL_ZOOM_MODE = "zoomMode",
     GLOBAL_ZOOM_POINT = "zoomPoint",
@@ -90,6 +90,11 @@ export enum PreferenceKeys {
     WCS_OVERLAY_BEAM_TYPE = "beamType",
     WCS_OVERLAY_BEAM_WIDTH = "beamWidth",
     WCS_OVERLAY_CURSOR_INFO = "cursorInfoVisible",
+
+    LAYOUT = "layout",
+    LAYOUT_DYNAMIC_LAYOUT_ENABLE = "dynamicLayoutEnable",
+    LAYOUT_IS_HIGH_DIM_PRIORITY = "isHighDimPriority",
+    LAYOUT_DYNAMIC_LAYOUT = "dynamicLayout",
 
     REGION_COLOR = "regionColor",
     REGION_LINE_WIDTH = "regionLineWidth",
@@ -151,19 +156,19 @@ const DEFAULTS = {
         fileSortingString: "-date",
         fileFilteringType: FileFilteringType.Fuzzy,
         pixelGridVisible: false,
-        pixelGridColor: "#FFFFFF",
+        pixelGridColor: "#ffffff",
         imageMultiPanelEnabled: false,
         imagePanelMode: ImagePanelMode.Dynamic,
         imagePanelColumns: 2,
         imagePanelRows: 2,
         checkNewRelease: true,
-        latestRelease: "v" + CARTA_INFO.version
+        latestRelease: "v" + CARTA_INFO.version,
+        pvAxesOrderReverse: false
     },
     GLOBAL: {
         theme: Theme.AUTO,
         autoLaunch: true,
         fileFilterMode: FileFilterMode.Content,
-        layout: PresetLayout.DEFAULT,
         cursorPosition: CursorPosition.TRACKING,
         zoomMode: Zoom.FIT,
         zoomPoint: ZoomPoint.CURSOR,
@@ -222,8 +227,14 @@ const DEFAULTS = {
         beamWidth: 1,
         cursorInfoVisible: CursorInfoVisibility.ActiveImage
     },
+    LAYOUT: {
+        layout: PresetLayout.DEFAULT,
+        dynamicLayoutEnable: false,
+        isHighDimPriority: true,
+        existLayoutMapping: {}
+    },
     REGION: {
-        regionColor: "#2EE6D6",
+        regionColor: "#2ee6d6",
         regionLineWidth: 2,
         regionDashLength: 0,
         regionType: CARTA.RegionType.RECTANGLE,
@@ -231,7 +242,7 @@ const DEFAULTS = {
         regionSize: 30
     },
     ANNOTATION: {
-        annotationColor: "#FFBA01",
+        annotationColor: "#ffba01",
         annotationLineWidth: 2,
         annotationDashLength: 0,
         annotationType: CARTA.RegionType.ANNRECTANGLE,
@@ -315,10 +326,6 @@ export class PreferenceStore {
 
     @computed get fileFilteringType(): FileFilteringType {
         return this.preferences.get(PreferenceKeys.SILENT_FILE_FILTERING_TYPE) ?? DEFAULTS.SILENT.fileFilteringType;
-    }
-
-    @computed get layout(): string {
-        return this.preferences.get(PreferenceKeys.GLOBAL_LAYOUT) ?? DEFAULTS.GLOBAL.layout;
     }
 
     @computed get cursorPosition(): string {
@@ -631,6 +638,10 @@ export class PreferenceStore {
         return this.preferences.get(PreferenceKeys.PERFORMANCE_PV_PREVIEW_CUBE_SIZE_LIMIT_UNIT) ?? DEFAULTS.PERFORMANCE.pvPreviewCubeSizeLimitUnit;
     }
 
+    @computed get isPVAxesOrderReverse(): boolean {
+        return this.preferences.get(PreferenceKeys.SILENT_PV_AXES_ORDER_REVERSE) ?? DEFAULTS.SILENT.pvAxesOrderReverse;
+    }
+
     @computed get isSelectingAllLogEvents(): boolean {
         return this.preferences.get(PreferenceKeys.LOG_EVENT)?.length === Event.EVENT_NUMBER;
     }
@@ -741,6 +752,25 @@ export class PreferenceStore {
         return this.preferences.get(PreferenceKeys.LATEST_RELEASE) ?? DEFAULTS.SILENT.latestRelease;
     }
 
+    @computed get layout(): string {
+        return this.preferences.get(PreferenceKeys.LAYOUT) ?? DEFAULTS.LAYOUT.layout;
+    }
+
+    // getter for dynamic layout setting
+    @computed get dynamicLayoutEnable(): boolean {
+        return this.preferences.get(PreferenceKeys.LAYOUT_DYNAMIC_LAYOUT_ENABLE) ?? DEFAULTS.LAYOUT.dynamicLayoutEnable;
+    }
+
+    // getter for file priority for dynamic layout setting
+    @computed get isHighDimPriority(): boolean {
+        return this.preferences.get(PreferenceKeys.LAYOUT_IS_HIGH_DIM_PRIORITY) ?? DEFAULTS.LAYOUT.isHighDimPriority;
+    }
+
+    // getter for file priority for dynamic layout setting
+    @computed get existLayoutMapping(): {[key: string]: string} {
+        return this.preferences.get(PreferenceKeys.LAYOUT_DYNAMIC_LAYOUT) ?? DEFAULTS.LAYOUT.existLayoutMapping;
+    }
+
     /**
      * Sets the preference parameter
      *
@@ -800,7 +830,8 @@ export class PreferenceStore {
             PreferenceKeys.IMAGE_MULTI_PANEL_ENABLED,
             PreferenceKeys.IMAGE_PANEL_MODE,
             PreferenceKeys.IMAGE_PANEL_COLUMNS,
-            PreferenceKeys.IMAGE_PANEL_ROWS
+            PreferenceKeys.IMAGE_PANEL_ROWS,
+            PreferenceKeys.SILENT_PV_AXES_ORDER_REVERSE
         ]);
     };
 
@@ -812,7 +843,6 @@ export class PreferenceStore {
             PreferenceKeys.GLOBAL_THEME,
             PreferenceKeys.GLOBAL_AUTOLAUNCH,
             PreferenceKeys.GLOBAL_FILE_FILTER_MODE,
-            PreferenceKeys.GLOBAL_LAYOUT,
             PreferenceKeys.GLOBAL_CURSOR_POSITION,
             PreferenceKeys.GLOBAL_ZOOM_MODE,
             PreferenceKeys.GLOBAL_ZOOM_POINT,
@@ -895,6 +925,13 @@ export class PreferenceStore {
             PreferenceKeys.WCS_OVERLAY_WCS_TYPE,
             PreferenceKeys.WCS_OVERLAY_CURSOR_INFO
         ]);
+    };
+
+    /**
+     * Reset the layout settings
+     */
+    @action resetLayoutSettings = () => {
+        this.clearPreferences([PreferenceKeys.LAYOUT, PreferenceKeys.LAYOUT_DYNAMIC_LAYOUT_ENABLE, PreferenceKeys.LAYOUT_IS_HIGH_DIM_PRIORITY]);
     };
 
     /**
@@ -1003,7 +1040,7 @@ export class PreferenceStore {
         if (!localStorage.getItem("preferences")) {
             const stringKeys = [
                 PreferenceKeys.GLOBAL_THEME,
-                PreferenceKeys.GLOBAL_LAYOUT,
+                PreferenceKeys.LAYOUT,
                 PreferenceKeys.GLOBAL_CURSOR_POSITION,
                 PreferenceKeys.GLOBAL_ZOOM_MODE,
                 PreferenceKeys.GLOBAL_ZOOM_POINT,
