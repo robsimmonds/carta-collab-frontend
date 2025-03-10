@@ -382,6 +382,10 @@ export class AppStore {
         return this.backendService?.connectionStatus !== ConnectionStatus.ACTIVE || this.fileLoading;
     }
 
+    @computed get openWorkspaceDisabled(): boolean {
+    	return !this.activeWorkspace;
+    }
+
     @computed get appendFileDisabled(): boolean {
         return this.openFileDisabled || !this.activeFrame;
     }
@@ -2698,6 +2702,135 @@ export class AppStore {
             this.loadingWorkspace = false;
             return false;
         }
+    }
+    
+    @flow.bound
+    public *createWorkspace(name: string) {
+        const workspace: Workspace = {
+            workspaceVersion: 0,
+            frontendVersion: CARTA_INFO.version,
+            description: "Workspace exported from CARTA",
+            files: [],
+            references: {},
+            date: Date.now() / 1000
+        };
+
+	const thumbnail = yield exportScreenshot();
+        if (thumbnail) {
+            workspace.thumbnail = thumbnail;
+        }
+
+        if (this.spatialReference) {
+            workspace.references.spatial = this.spatialReference.frameInfo.fileId;
+        }
+        if (this.spectralReference) {
+            workspace.references.spectral = this.spectralReference.frameInfo.fileId;
+        }
+        if (this.rasterScalingReference) {
+            workspace.references.raster = this.rasterScalingReference.frameInfo.fileId;
+        }
+	
+	let hasTemporaryFiles = false;
+
+	for (const frame of this.frames) {
+            if (frame?.frameInfo?.generated) {
+                hasTemporaryFiles = true;
+                continue;
+            }
+
+            const workspaceFile: WorkspaceFile = {
+                id: frame.frameInfo.fileId,
+                directory: frame.frameInfo.directory,
+                filename: frame.filename,
+                hdu: frame.frameInfo.hdu,
+                references: {}
+            };
+            if (frame.spatialReference) {
+                workspaceFile.references.spatial = frame.spatialReference.frameInfo.fileId;
+            } else if (frame.regionSet?.regions.length) {
+                workspaceFile.regionsSet = {
+                    regions: [],
+                    selectedRegion: frame.regionSet.selectedRegion?.regionId
+                };
+                for (const region of frame.regionSet.regions) {
+                    // Skip cursor region
+                    if (region.regionId === 0) {
+                        continue;
+                    }
+                    workspaceFile.regionsSet.regions.push({
+                        id: region.regionId,
+                        type: region.regionType,
+                        rotation: region.rotation,
+                        points: region.controlPoints,
+                        name: region.name,
+                        color: region.color,
+                        lineWidth: region.lineWidth,
+                        locked: region.locked,
+                        dashes: region.dashLength ? [region.dashLength] : [],
+                        // Check if styles are available. If so, add them to the region
+                        annotationStyles: (region as any).getAnnotationStyles?.()
+                    });
+		}
+            }
+
+            workspaceFile.center = frame.center;
+            workspaceFile.zoomLevel = frame.zoomLevel;
+            workspaceFile.channel = frame.channel;
+            workspaceFile.stokes = frame.stokes;
+
+	                if (frame.spectralReference) {
+                workspaceFile.references.spectral = frame.spectralReference.frameInfo.fileId;
+            }
+            if (frame.rasterScalingReference) {
+                workspaceFile.references.raster = frame.rasterScalingReference.frameInfo.fileId;
+            }
+
+            // Render config (TODO: A more extensible way of saving/loading state for simple stores)
+            const {scaling, colorMap, bias, contrast, gamma, alpha, inverted, useCubeHistogram, useCubeHistogramContours, selectedPercentile, scaleMin, scaleMax, visible} = frame.renderConfig;
+            workspaceFile.renderConfig = {
+                scaling,
+                colorMap,
+                bias,
+                contrast,
+                gamma,
+                alpha,
+                inverted,
+                useCubeHistogram,
+                useCubeHistogramContours,
+                selectedPercentile,
+                scaleMin,
+                scaleMax,
+                visible
+            };
+	    
+	    // Contours and vector overlays
+            const {enabled: contoursEnabled, ...contourConfig} = frame.contourConfig;
+            if (contoursEnabled) {
+                workspaceFile.contourConfig = contourConfig;
+                delete workspaceFile.contourConfig["preferenceStore"];
+            }
+            const {enabled: vectorOverlayEnabled, ...vectorOverlayConfig} = frame.vectorOverlayConfig;
+            if (vectorOverlayEnabled) {
+                workspaceFile.vectorOverlayConfig = vectorOverlayConfig;
+                delete workspaceFile.vectorOverlayConfig["preferenceStore"];
+            }
+
+            workspace.files.push(workspaceFile);
+        }
+
+        if (hasTemporaryFiles) {
+            AppToaster.show(WarningToast("The workspace contains generated files. These will not be preserved when reloading."));
+        }
+        if (this.activeFrame) {
+            workspace.selectedFile = this.activeFrameFileId;
+        }
+        const createWorkspace = yield this.apiService.createWorkspace(name, workspace);
+        if (createWorkspace) {
+            this.activeWorkspace = createWorkspace;
+            return true;
+        }
+        return false;
+
     }
 
     @flow.bound
