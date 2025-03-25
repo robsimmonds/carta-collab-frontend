@@ -276,12 +276,12 @@ export class RootMenuComponent extends React.Component {
                     <ExportImageMenuComponent />
                 </MenuItem>
                 <MenuDivider />
-                <Menu.Item text="Create Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, { mode: WorkspaceDialogMode.Create})} />
+                <MenuItem text="Create Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, { mode: WorkspaceDialogMode.Create})} />
 
-                <Menu.Item text="Open Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Open})} />
-                <Menu.Item text="Save Workspace" disabled={appStore.openWorkspaceDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Save})} />
-                <Menu.Divider />
-                <Menu.Item text="Preferences" onClick={() => appStore.dialogStore.showDialog(DialogId.Preference)} />
+                <MenuItem text="Open Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Open})} />
+                <MenuItem text="Save Workspace" disabled={appStore.openWorkspaceDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Save})} />
+                <MenuDivider />
+                <MenuItem text="Preferences" onClick={() => appStore.dialogStore.showDialog(DialogId.Preference)} />
                 {serverSubMenu}
             </Menu>
         );
