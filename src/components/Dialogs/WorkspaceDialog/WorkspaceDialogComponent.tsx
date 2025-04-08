@@ -20,7 +20,8 @@ export enum WorkspaceDialogMode {
     Hidden,
     Save,
     Open,
-    Create //new create mode
+    Create, //new create mode
+    Clone
 }
 
 export const WorkspaceDialogComponent = observer(() => {
@@ -119,6 +120,18 @@ export const WorkspaceDialogComponent = observer(() => {
         },
         [appStore, handleCloseClicked]
     );
+
+    const handleCloneClicked = async () => {
+        if (!selectedWorkspace) {
+            return;
+        }
+        const confirmed = await appStore.alertStore.showInteractiveAlert("CLONE????");
+        if (confirmed) {
+            await appStore.cloneWorkspace(selectedWorkspace.name);
+            await fetchWorkspaces();
+        }
+    };
+
 
     const openWorkspace = useCallback(
         async (name: string) => {
@@ -319,6 +332,11 @@ export const WorkspaceDialogComponent = observer(() => {
 		    {mode === WorkspaceDialogMode.Create && (
 			<AnchorButton intent={Intent.PRIMARY} onClick={handleCreateClicked} text="Create" disabled={isFetching || !workspaceName} />
 		    )}
+
+		    {/*Clone*/}
+                    {mode === WorkspaceDialogMode.Clone && (
+                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} />
+                    )}		
 
                 </div>
             </div>
