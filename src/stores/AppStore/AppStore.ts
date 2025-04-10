@@ -2967,37 +2967,16 @@ export class AppStore {
         return false;
     }
 
-/*
     @flow.bound
     public *cloneWorkspace(newWorkspaceName: string) {
-        // Assuming the workspace to clone is the currently open one.
-        if (!this.activeWorkspace) {
-            AppToaster.show(ErrorToast("No workspace open to clone."));
-            return false;
+        const cloneWorkspace = yield this.apiService.cloneWorkspace(newWorkspaceName);
+        if (cloneWorkspace) {
+            this.activeWorkspace = cloneWorkspace;
+            return true;
         }
-        this.loadingWorkspace = true;
-        try {
-            // Call the API service method.
-            const clonedWorkspace = yield this.apiService.cloneWorkspace(
-                this.activeWorkspace.name, // source workspace name
-                newWorkspaceName,
-                this.activeWorkspace // you might pass the full workspace object if needed
-            );
-            if (clonedWorkspace) {
-                this.activeWorkspace = clonedWorkspace;
-                console.log("Workspace cloned successfully");
-                return true;
-            }
-        } catch (error) {
-            console.error("Clone workspace error:", error);
-            AppToaster.show(ErrorToast("Error cloning workspace"));
-        } finally {
-            this.loadingWorkspace = false;
-        }
-        return false;
+        return false;    
     }
-
-*/
+/*
     async cloneWorkspace(name: string) {
         try {
             const success = await this.apiService.cloneWorkspace(name);
@@ -3010,7 +2989,7 @@ export class AppStore {
         }
         AlertStore.Instance.showAlert(`Cloning workspace ${name} failed!`);
     }
-
+*/
 
     async deleteWorkspace(name: string) {
         try {

@@ -587,7 +587,31 @@ export class ApiService {
         }
     };
 
+    public cloneWorkspace = async (workspaceName: string): Promise<Workspace | undefined> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
+                const res = await this.axiosInstance.put(url, {workspaceName});
+                //if (res.data?.workspace?.id) {
+                //    workspace.id = res.data?.workspace?.id;
+                //}
+                return {...res.data.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+            } catch (err) {
+                console.log(err);
+                return undefined;
+            }
+        } else {
+            // Fallback: if no API, clone from localStorage (if desired)
+            //Nothing implemented 
+            console.log("Api Error: No fallback")       
+            return undefined;
+            
 
+        };
+
+    }
+
+/*
     public cloneWorkspace =  async (workspaceName: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
@@ -606,7 +630,7 @@ export class ApiService {
 	}
     }
  
-
+*/
 
     public getSharedWorkspaceKey = async (workspaceId: string): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
