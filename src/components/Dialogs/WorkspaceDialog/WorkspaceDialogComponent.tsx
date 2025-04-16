@@ -145,7 +145,7 @@ export const WorkspaceDialogComponent = observer(() => {
     const handleCloneClicked = () => {
         if (!selectedWorkspace) {
             return;
-        }
+    }
         cloneWorkspace(selectedWorkspace.name);
     };
 

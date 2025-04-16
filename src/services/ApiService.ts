@@ -587,15 +587,15 @@ export class ApiService {
         }
     };
 
-    public cloneWorkspace = async (workspaceName: string): Promise<Workspace | undefined> => {
+    public cloneWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName});
-                //if (res.data?.workspace?.id) {
-                //    workspace.id = res.data?.workspace?.id;
-                //}
-                return {...res.data.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                const res = await this.axiosInstance.put(url, {workspaceName,workspace});
+                if (res.data?.workspace?.id) {
+                    workspace.id = res.data?.workspace?.id;
+                }
+                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
             } catch (err) {
                 console.log(err);
                 return undefined;
