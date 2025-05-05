@@ -611,6 +611,28 @@ export class ApiService {
 
     }
 
+    public branchWorkspace = async (workspaceName: string) => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+		AppToaster.show({icon: "warning-sign", message: "API NAME: "+workspaceName});
+		
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/branchWorkspace`;
+                const response = await this.axiosInstance.put(url, {data: {workspaceName}});
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        } else {
+	    // Fallback: if no API, branch from localStorage (if desired)
+            //Nothing implemented 
+            console.log("Api Error: No fallback")
+            return false;           
+        }
+     
+
+    }
+
 /*
     public cloneWorkspace =  async (workspaceName: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {

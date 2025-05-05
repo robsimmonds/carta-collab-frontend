@@ -3098,6 +3098,30 @@ export class AppStore {
         AlertStore.Instance.showAlert(`Cloning workspace ${name} failed!`);
     }
 */
+/*
+    @flow.bound
+    public *branchWorkspace(name: string) {
+	const branchWorkspace = yield this.apiService.branchWorkspace(name);
+        if (branchWorkspace) {
+            return true;
+        }
+        return false;
+
+    }	    
+*/
+    async branchWorkspace(name: string) {
+        try {
+            const success = await this.apiService.branchWorkspace(name);
+            AppToaster.show(SuccessToast("floppy-disk", "Appstore name: "+ name));
+	    if (success) {
+                AppToaster.show(SuccessToast("console", `branch create for Workspace ${name} successfully.`, SnippetStore.ToasterTimeout));
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        AlertStore.Instance.showAlert(`Branching workspace ${name} failed!`);
+    }
 
     async deleteWorkspace(name: string) {
         try {
