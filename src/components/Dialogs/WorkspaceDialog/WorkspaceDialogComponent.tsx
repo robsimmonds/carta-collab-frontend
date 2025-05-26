@@ -20,7 +20,10 @@ export enum WorkspaceDialogMode {
     Hidden,
     Save,
     Open,
-    Create //new create mode
+    Create, //new create mode
+    Clone,  //new mode for cloning
+    Branch  //new mode for branching
+
 }
 
 export const WorkspaceDialogComponent = observer(() => {
@@ -119,6 +122,63 @@ export const WorkspaceDialogComponent = observer(() => {
         },
         [appStore, handleCloseClicked]
     );
+
+    // clone workspace logic
+    const cloneWorkspace = useCallback(async (name: string) => {
+        if (!name) return;
+        setIsFetching(true);
+
+        try {
+            // Calls a new store method that creates db and inits git
+            const res = await appStore.cloneWorkspace(name);
+            if (res) {
+                AppToaster.show(SuccessToast("floppy-disk", "Workspace cloned"));
+                handleCloseClicked();
+                return;
+            }
+        } catch (err) {
+            console.log(err);
+        }
+        AppToaster.show(ErrorToast("Error cloning workspace"));
+        setIsFetching(false);
+    }, [appStore, handleCloseClicked]);    
+
+    const handleCloneClicked = () => {
+        if (!selectedWorkspace) {
+            return;
+        }
+        cloneWorkspace(selectedWorkspace.name);
+    };
+      
+/*    // branch workspace logic
+    const branchWorkspace = useCallback(async (name: string) => {
+        if (!name) return;
+        setIsFetching(true);
+
+        try {
+            // Calls a new store method that creates db and inits git
+            const res = await appStore.branchWorkspace(name);
+            if (res) {
+                AppToaster.show(SuccessToast("floppy-disk", "Workspace branched"));
+                handleCloseClicked();
+                return;
+            }
+        } catch (err) {
+            console.log(err);
+        }
+        AppToaster.show(ErrorToast("Error cloning workspace"));
+        setIsFetching(false);
+    }, [appStore, handleCloseClicked]); */
+
+    const handleBranchClicked = async () => {
+        if (!selectedWorkspace) {
+            return;
+	}
+	//branchWorkspace(selectedWorkspace.name)
+	AppToaster.show(SuccessToast("floppy-disk", selectedWorkspace.name));
+	await appStore.branchWorkspace(selectedWorkspace.name);
+        await fetchWorkspaces();
+    };
 
     const openWorkspace = useCallback(
         async (name: string) => {
@@ -321,7 +381,17 @@ export const WorkspaceDialogComponent = observer(() => {
 			<AnchorButton intent={Intent.PRIMARY} onClick={handleCreateClicked} text="Create" disabled={isFetching || !workspaceName} />
 		    )}
 
-                </div>
+
+		    {/*Clone*/}
+                    {mode === WorkspaceDialogMode.Clone && (
+                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} />
+                    )}		
+		    {/*Branch*/}
+                    {mode === WorkspaceDialogMode.Branch && (
+                        <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
+                    )} 
+	       </div>
+
             </div>
         </DraggableDialogComponent>
     );
