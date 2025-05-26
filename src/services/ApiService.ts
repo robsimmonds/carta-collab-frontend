@@ -537,6 +537,7 @@ export class ApiService {
     };
 
     public createWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
+
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/createWorkspace`;

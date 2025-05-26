@@ -23,6 +23,7 @@ export enum WorkspaceDialogMode {
     Create, //new create mode
     Clone,  //new mode for cloning
     Branch  //new mode for branching
+
 }
 
 export const WorkspaceDialogComponent = observer(() => {
@@ -380,6 +381,7 @@ export const WorkspaceDialogComponent = observer(() => {
 			<AnchorButton intent={Intent.PRIMARY} onClick={handleCreateClicked} text="Create" disabled={isFetching || !workspaceName} />
 		    )}
 
+
 		    {/*Clone*/}
                     {mode === WorkspaceDialogMode.Clone && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} />
@@ -388,7 +390,8 @@ export const WorkspaceDialogComponent = observer(() => {
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
                     )} 
-	        </div>
+	       </div>
+
             </div>
         </DraggableDialogComponent>
     );
