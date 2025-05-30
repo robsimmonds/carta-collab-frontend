@@ -32,6 +32,9 @@ export const WorkspaceDialogComponent = observer(() => {
     const [workspaceName, setWorkspaceName] = useState("");
     const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceListItem>();
     const [commitMessage, setCommitMessage] = useState("");
+    const [branches, setBranches] = useState<string[]>([]);
+    const [selectedBranch, setSelectedBranch] = useState<string>("");
+    const [currentBranch, setCurrentBranch] = useState<string>("");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
@@ -254,9 +257,21 @@ export const WorkspaceDialogComponent = observer(() => {
 			: "Open Workspace"
     };
 
-    const handleEntryClicked = (entry: WorkspaceListItem) => {
+    const handleEntryClicked = async (entry: WorkspaceListItem) => {
         setWorkspaceName(entry.name);
         setSelectedWorkspace(entry);
+
+        // Fetch branches for this workspace
+        if (entry.name) {
+            const branchList = await appStore.listWorkspaceBranches(entry.name);
+            setBranches(branchList || []);
+            // Optionally, detect the current branch (the one with "*", or just pick the first)
+            if (branchList && branchList.length > 0) {
+                // If you want to show the current branch, you may need to update your backend to return it separately.
+                setCurrentBranch(branchList[0]);
+                setSelectedBranch(branchList[0]);
+            }
+        }
     };
 
     const handleDoubleClick = useCallback(
@@ -357,6 +372,15 @@ export const WorkspaceDialogComponent = observer(() => {
         );
     }
 
+    const handleSwitchBranch = async () => {
+        if (!selectedWorkspace || !selectedBranch) return;
+        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Switched to branch ${selectedBranch}`));
+            // Optionally, reload workspace data here
+        }
+    };
+
     return (
         <DraggableDialogComponent dialogProps={dialogProps} helpType={HelpType.WORKSPACE} defaultWidth={750} defaultHeight={550} minWidth={750} minHeight={550} enableResizing={true} dialogId={DialogId.Workspace}>
             <div className={Classes.DIALOG_BODY}>
@@ -373,6 +397,34 @@ export const WorkspaceDialogComponent = observer(() => {
                         onChange={e => setCommitMessage(e.currentTarget.value)}
                         style={{ marginTop: 8 }}
                     />
+                )}
+                {mode === WorkspaceDialogMode.Branch && selectedWorkspace && (
+                    <div style={{ margin: "8px 0" }}>
+                        <label>Switch Branch:</label>
+                        <select
+                            value={selectedBranch}
+                            onChange={e => setSelectedBranch(e.target.value)}
+                            style={{ marginLeft: 8, minWidth: 120 }}
+                        >
+                            {branches.map(branch => (
+                                <option key={branch} value={branch}>
+                                    {branch}
+                                </option>
+                            ))}
+                        </select>
+                        <AnchorButton
+                            intent={Intent.PRIMARY}
+                            onClick={handleSwitchBranch}
+                            text="Switch"
+                            disabled={isFetching || !selectedBranch}
+                            style={{ marginLeft: 8 }}
+                        />
+                        {currentBranch && (
+                            <span style={{ marginLeft: 16, fontStyle: "italic" }}>
+                                Current: {currentBranch}
+                            </span>
+                        )}
+                    </div>
                 )}
             </div>
             <div className={Classes.DIALOG_FOOTER}>

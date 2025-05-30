@@ -3657,4 +3657,20 @@ export class AppStore {
             regionProfileStoreMap.get(regionId)?.resetProfilesProgress();
         });
     }
+
+    // List branches for a workspace
+    public async listWorkspaceBranches(name: string): Promise<string[] | undefined> {
+        return await this.apiService.listWorkspaceBranches(name);
+    }
+
+    // Switch to a branch in a workspace
+    public async switchWorkspaceBranch(name: string, branch: string): Promise<boolean> {
+        const success = await this.apiService.switchWorkspaceBranch(name, branch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
+        } else {
+            AlertStore.Instance.showAlert(`Switching branch to ${branch} in workspace ${name} failed!`);
+        }
+        return success;
+    }
 }

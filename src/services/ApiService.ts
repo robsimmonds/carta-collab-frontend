@@ -688,4 +688,34 @@ export class ApiService {
             }
         }
     };
+
+    // List branches for a workspace
+    public listWorkspaceBranches = async (workspaceName: string): Promise<string[] | undefined> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/listWorkspaceBranches`;
+                const response = await this.axiosInstance.post(url, { workspaceName });
+                return response?.data?.branches;
+            } catch (err) {
+                console.log(err);
+                return undefined;
+            }
+        }
+        return undefined;
+    };
+
+    // Switch to a branch in a workspace
+    public switchWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/switchWorkspaceBranch`;
+                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
 }
