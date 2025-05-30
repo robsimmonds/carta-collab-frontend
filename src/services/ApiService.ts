@@ -561,12 +561,11 @@ export class ApiService {
         }
     };
 
-    
-    public setWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
+    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/setWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName, workspace});
+                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage});
                 if (res.data?.workspace?.id) {
                     workspace.id = res.data?.workspace?.id;
                 }

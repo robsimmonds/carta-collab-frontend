@@ -31,9 +31,12 @@ export const WorkspaceDialogComponent = observer(() => {
     const [fetchErrorMessage, setFetchErrorMessage] = useState("");
     const [workspaceName, setWorkspaceName] = useState("");
     const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceListItem>();
+    const [commitMessage, setCommitMessage] = useState("");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
+
+
 
     const fetchWorkspaces = useCallback(async () => {
         setIsFetching(true);
@@ -94,7 +97,7 @@ export const WorkspaceDialogComponent = observer(() => {
     };
 
     const saveWorkspace = useCallback(
-        async (name: string) => {
+        async (name: string, commitMsg?: string) => {
             if (!name) {
                 return;
             }
@@ -107,7 +110,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
             setIsFetching(true);
             try {
-                const res = await appStore.saveWorkspace(name);
+                const res = await appStore.saveWorkspace(name, commitMsg);
                 if (res) {
                     AppToaster.show(SuccessToast("floppy-disk", "Workspace saved"));
                     handleCloseClicked();
@@ -205,7 +208,7 @@ export const WorkspaceDialogComponent = observer(() => {
         if (!workspaceName) {
             return;
         }
-        saveWorkspace(workspaceName);
+        saveWorkspace(workspaceName, commitMessage);
     };
 
     const handleDeleteClicked = async () => {
@@ -362,6 +365,15 @@ export const WorkspaceDialogComponent = observer(() => {
                     <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div>
                 </div>
                 <InputGroup className="workspace-name-input" placeholder="Enter workspace name" value={workspaceName} autoFocus={true} onChange={handleInput} onKeyDown={handleKeyDown} />
+                {mode === WorkspaceDialogMode.Save && (
+                    <InputGroup
+                        className="workspace-commit-message-input"
+                        placeholder="Enter commit message (optional)"
+                        value={commitMessage}
+                        onChange={e => setCommitMessage(e.currentTarget.value)}
+                        style={{ marginTop: 8 }}
+                    />
+                )}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
@@ -381,8 +393,8 @@ export const WorkspaceDialogComponent = observer(() => {
 
 		    {/*Clone*/}
                     {mode === WorkspaceDialogMode.Clone && (
-                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} />
-                    )}		
+                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} /> 
+                    )}
 		    {/*Branch*/}
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 

@@ -3,7 +3,7 @@
 .workspace-dialog {
     .#{$ns}-dialog-body {
         height: 100%;
-        overflow: hidden;
+        overflow-y: auto;
         margin-top: 10px;
 
         margin-bottom: 5px;

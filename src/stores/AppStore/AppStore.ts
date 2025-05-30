@@ -2823,7 +2823,7 @@ export class AppStore {
     }
 
     @flow.bound
-    public *saveWorkspace(name: string) {
+    public *saveWorkspace(name: string, commitMessage?: string) {
         const workspace: Workspace = {
             workspaceVersion: 0,
             frontendVersion: CARTA_INFO.version,
@@ -2948,7 +2948,7 @@ export class AppStore {
         if (this.activeFrame) {
             workspace.selectedFile = this.activeFrameFileId;
         }
-        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace);
+        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage);
         if (savedWorkspace) {
             this.activeWorkspace = savedWorkspace;
             return true;
@@ -3656,5 +3656,5 @@ export class AppStore {
         this.spectralProfiles?.forEach(regionProfileStoreMap => {
             regionProfileStoreMap.get(regionId)?.resetProfilesProgress();
         });
-    };
+    }
 }
