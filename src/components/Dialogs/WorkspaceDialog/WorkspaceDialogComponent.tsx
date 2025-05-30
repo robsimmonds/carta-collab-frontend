@@ -261,16 +261,11 @@ export const WorkspaceDialogComponent = observer(() => {
         setWorkspaceName(entry.name);
         setSelectedWorkspace(entry);
 
-        // Fetch branches for this workspace
         if (entry.name) {
-            const branchList = await appStore.listWorkspaceBranches(entry.name);
-            setBranches(branchList || []);
-            // Optionally, detect the current branch (the one with "*", or just pick the first)
-            if (branchList && branchList.length > 0) {
-                // If you want to show the current branch, you may need to update your backend to return it separately.
-                setCurrentBranch(branchList[0]);
-                setSelectedBranch(branchList[0]);
-            }
+            const branchInfo = await appStore.listWorkspaceBranches(entry.name);
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setSelectedBranch(branchInfo?.current || "");
         }
     };
 
@@ -377,7 +372,13 @@ export const WorkspaceDialogComponent = observer(() => {
         const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
         if (success) {
             AppToaster.show(SuccessToast("console", `Switched to branch ${selectedBranch}`));
-            // Optionally, reload workspace data here
+            // Refresh branch info after switching
+            const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setSelectedBranch(branchInfo?.current || "");
+            // Optionally reload workspace data
+            await appStore.loadWorkspace(selectedWorkspace.name);
         }
     };
 

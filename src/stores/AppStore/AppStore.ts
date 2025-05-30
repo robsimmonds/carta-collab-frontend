@@ -3659,7 +3659,7 @@ export class AppStore {
     }
 
     // List branches for a workspace
-    public async listWorkspaceBranches(name: string): Promise<string[] | undefined> {
+    public async listWorkspaceBranches(name: string): Promise<{branches: string[], current: string} | undefined> {
         return await this.apiService.listWorkspaceBranches(name);
     }
 
