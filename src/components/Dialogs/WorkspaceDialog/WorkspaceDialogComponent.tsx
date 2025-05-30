@@ -390,6 +390,11 @@ export const WorkspaceDialogComponent = observer(() => {
                     <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div>
                 </div>
                 <InputGroup className="workspace-name-input" placeholder="Enter workspace name" value={workspaceName} autoFocus={true} onChange={handleInput} onKeyDown={handleKeyDown} />
+                {mode === WorkspaceDialogMode.Save && currentBranch && (
+                    <div style={{ margin: "8px 0", fontStyle: "italic", color: "#888" }}>
+                        Saving to branch: <b>{currentBranch}</b>
+                    </div>
+                )}
                 {mode === WorkspaceDialogMode.Save && (
                     <InputGroup
                         className="workspace-commit-message-input"
