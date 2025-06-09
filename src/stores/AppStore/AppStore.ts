@@ -2990,9 +2990,9 @@ export class AppStore {
 
     }	    
 */
-    async branchWorkspace(name: string) {
+    async branchWorkspace(name: string, branchName: string) {
         try {
-            const success = await this.apiService.branchWorkspace(name);
+            const success = await this.apiService.branchWorkspace(name, branchName);
             AppToaster.show(SuccessToast("floppy-disk", "Appstore name: "+ name));
 	    if (success) {
                 AppToaster.show(SuccessToast("console", `branch create for Workspace ${name} successfully.`, SnippetStore.ToasterTimeout));

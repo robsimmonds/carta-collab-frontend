@@ -609,48 +609,22 @@ export class ApiService {
 
     }
 
-    public branchWorkspace = async (workspaceName: string) => {
+    public branchWorkspace = async (workspaceName: string, branchName: string) => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
-		AppToaster.show({icon: "warning-sign", message: "API NAME: "+workspaceName});
-		
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/branchWorkspace`;
-                const response = await this.axiosInstance.put(url,{workspaceName});
+                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
                 return response?.data?.success;
             } catch (err) {
                 console.log(err);
                 return false;
             }
         } else {
-	    // Fallback: if no API, branch from localStorage (if desired)
-            //Nothing implemented 
+            // Fallback: if no API, branch from localStorage (if desired)
             console.log("Api Error: No fallback")
             return false;           
         }
-     
-
     }
-
-/*
-    public cloneWorkspace =  async (workspaceName: string): Promise<Workspace | undefined> => {
-        if (ApiService.RuntimeConfig.apiAddress) {
-            try {
-                const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName});
-            	return res?.data?.success;
-	    } catch (err) {
-                console.log(err);
-                return undefined;
-            }
-        } else {
-            // Fallback: if no API, clone from localStorage (if desired)
-	    //Nothing implemented 
-	    console.log("Api Error: No fallback")	
-            return undefined;
-	}
-    }
- 
-*/
 
     public getSharedWorkspaceKey = async (workspaceId: string): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {

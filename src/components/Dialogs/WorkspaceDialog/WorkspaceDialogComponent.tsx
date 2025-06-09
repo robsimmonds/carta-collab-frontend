@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, DialogProps, InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
 import {Cell, Column, Region, RenderMode, SelectionModes, Table2, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -35,6 +35,7 @@ export const WorkspaceDialogComponent = observer(() => {
     const [branches, setBranches] = useState<string[]>([]);
     const [selectedBranch, setSelectedBranch] = useState<string>("");
     const [currentBranch, setCurrentBranch] = useState<string>("");
+    const [branchName, setBranchName] = useState("");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
@@ -176,13 +177,11 @@ export const WorkspaceDialogComponent = observer(() => {
     }, [appStore, handleCloseClicked]); */
 
     const handleBranchClicked = async () => {
-        if (!selectedWorkspace) {
-            return;
-	}
-	//branchWorkspace(selectedWorkspace.name)
-	AppToaster.show(SuccessToast("floppy-disk", selectedWorkspace.name));
-	await appStore.branchWorkspace(selectedWorkspace.name);
+	    //branchWorkspace(selectedWorkspace.name)
+        if (!selectedWorkspace || !branchName) return;
+        await appStore.branchWorkspace(selectedWorkspace.name, branchName);
         await fetchWorkspaces();
+        
     };
 
     const openWorkspace = useCallback(
@@ -461,6 +460,16 @@ export const WorkspaceDialogComponent = observer(() => {
                             </span>
                         )}
                     </div>
+                )}
+                {mode === WorkspaceDialogMode.Branch && (
+                    <FormGroup label="Branch Name" labelFor="branch-name-input">
+                        <InputGroup
+                            id="branch-name-input"
+                            placeholder="Enter branch name"
+                            value={branchName}
+                            onChange={e => setBranchName(e.currentTarget.value)}
+                        />
+                    </FormGroup>
                 )}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
