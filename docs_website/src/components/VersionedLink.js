@@ -1,6 +1,6 @@
 import React from "react";
-import {useLocation} from "@docusaurus/router";
 import Link from "@docusaurus/Link";
+import {useLocation} from "@docusaurus/router";
 
 const versions = require("../../versions.json");
 

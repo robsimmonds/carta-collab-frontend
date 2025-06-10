@@ -562,12 +562,11 @@ export class ApiService {
         }
     };
 
-    
-    public setWorkspace = async (workspaceName: string, workspace: Workspace): Promise<Workspace | undefined> => {
+    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/setWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName, workspace});
+                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage});
                 if (res.data?.workspace?.id) {
                     workspace.id = res.data?.workspace?.id;
                 }
@@ -611,48 +610,22 @@ export class ApiService {
 
     }
 
-    public branchWorkspace = async (workspaceName: string) => {
+    public branchWorkspace = async (workspaceName: string, branchName: string) => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
-		AppToaster.show({icon: "warning-sign", message: "API NAME: "+workspaceName});
-		
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/branchWorkspace`;
-                const response = await this.axiosInstance.put(url,{workspaceName});
+                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
                 return response?.data?.success;
             } catch (err) {
                 console.log(err);
                 return false;
             }
         } else {
-	    // Fallback: if no API, branch from localStorage (if desired)
-            //Nothing implemented 
+            // Fallback: if no API, branch from localStorage (if desired)
             console.log("Api Error: No fallback")
             return false;           
         }
-     
-
     }
-
-/*
-    public cloneWorkspace =  async (workspaceName: string): Promise<Workspace | undefined> => {
-        if (ApiService.RuntimeConfig.apiAddress) {
-            try {
-                const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName});
-            	return res?.data?.success;
-	    } catch (err) {
-                console.log(err);
-                return undefined;
-            }
-        } else {
-            // Fallback: if no API, clone from localStorage (if desired)
-	    //Nothing implemented 
-	    console.log("Api Error: No fallback")	
-            return undefined;
-	}
-    }
- 
-*/
 
     public getSharedWorkspaceKey = async (workspaceId: string): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
@@ -689,5 +662,35 @@ export class ApiService {
                 return false;
             }
         }
+    };
+
+    // List branches for a workspace
+    public listWorkspaceBranches = async (workspaceName: string): Promise<{branches: string[], current: string} | undefined> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/listWorkspaceBranches`;
+                const response = await this.axiosInstance.post(url, { workspaceName });
+                return { branches: response?.data?.branches, current: response?.data?.current };
+            } catch (err) {
+                console.log(err);
+                return undefined;
+            }
+        }
+        return undefined;
+    };
+
+    // Switch to a branch in a workspace
+    public switchWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/switchWorkspaceBranch`;
+                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
     };
 }

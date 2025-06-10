@@ -2822,7 +2822,7 @@ export class AppStore {
     }
 
     @flow.bound
-    public *saveWorkspace(name: string) {
+    public *saveWorkspace(name: string, commitMessage?: string) {
         const workspace: Workspace = {
             workspaceVersion: 0,
             frontendVersion: CARTA_INFO.version,
@@ -2947,7 +2947,7 @@ export class AppStore {
         if (this.activeFrame) {
             workspace.selectedFile = this.activeFrameFileId;
         }
-        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace);
+        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage);
         if (savedWorkspace) {
             this.activeWorkspace = savedWorkspace;
             return true;
@@ -2989,9 +2989,9 @@ export class AppStore {
 
     }	    
 */
-    async branchWorkspace(name: string) {
+    async branchWorkspace(name: string, branchName: string) {
         try {
-            const success = await this.apiService.branchWorkspace(name);
+            const success = await this.apiService.branchWorkspace(name, branchName);
             AppToaster.show(SuccessToast("floppy-disk", "Appstore name: "+ name));
 	    if (success) {
                 AppToaster.show(SuccessToast("console", `branch create for Workspace ${name} successfully.`, SnippetStore.ToasterTimeout));
@@ -3655,5 +3655,21 @@ export class AppStore {
         this.spectralProfiles?.forEach(regionProfileStoreMap => {
             regionProfileStoreMap.get(regionId)?.resetProfilesProgress();
         });
-    };
+    }
+
+    // List branches for a workspace
+    public async listWorkspaceBranches(name: string): Promise<{branches: string[], current: string} | undefined> {
+        return await this.apiService.listWorkspaceBranches(name);
+    }
+
+    // Switch to a branch in a workspace
+    public async switchWorkspaceBranch(name: string, branch: string): Promise<boolean> {
+        const success = await this.apiService.switchWorkspaceBranch(name, branch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
+        } else {
+            AlertStore.Instance.showAlert(`Switching branch to ${branch} in workspace ${name} failed!`);
+        }
+        return success;
+    }
 }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, DialogProps, InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
 import {Cell, Column, Region, RenderMode, SelectionModes, Table2, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -32,9 +32,16 @@ export const WorkspaceDialogComponent = observer(() => {
     const [fetchErrorMessage, setFetchErrorMessage] = useState("");
     const [workspaceName, setWorkspaceName] = useState("");
     const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceListItem>();
+    const [commitMessage, setCommitMessage] = useState("");
+    const [branches, setBranches] = useState<string[]>([]);
+    const [selectedBranch, setSelectedBranch] = useState<string>("");
+    const [currentBranch, setCurrentBranch] = useState<string>("");
+    const [branchName, setBranchName] = useState("");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
+
+
 
     const fetchWorkspaces = useCallback(async () => {
         setIsFetching(true);
@@ -95,7 +102,7 @@ export const WorkspaceDialogComponent = observer(() => {
     };
 
     const saveWorkspace = useCallback(
-        async (name: string) => {
+        async (name: string, commitMsg?: string) => {
             if (!name) {
                 return;
             }
@@ -108,7 +115,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
             setIsFetching(true);
             try {
-                const res = await appStore.saveWorkspace(name);
+                const res = await appStore.saveWorkspace(name, commitMsg);
                 if (res) {
                     AppToaster.show(SuccessToast("floppy-disk", "Workspace saved"));
                     handleCloseClicked();
@@ -171,13 +178,11 @@ export const WorkspaceDialogComponent = observer(() => {
     }, [appStore, handleCloseClicked]); */
 
     const handleBranchClicked = async () => {
-        if (!selectedWorkspace) {
-            return;
-	}
-	//branchWorkspace(selectedWorkspace.name)
-	AppToaster.show(SuccessToast("floppy-disk", selectedWorkspace.name));
-	await appStore.branchWorkspace(selectedWorkspace.name);
+	    //branchWorkspace(selectedWorkspace.name)
+        if (!selectedWorkspace || !branchName) return;
+        await appStore.branchWorkspace(selectedWorkspace.name, branchName);
         await fetchWorkspaces();
+        
     };
 
     const openWorkspace = useCallback(
@@ -206,7 +211,7 @@ export const WorkspaceDialogComponent = observer(() => {
         if (!workspaceName) {
             return;
         }
-        saveWorkspace(workspaceName);
+        saveWorkspace(workspaceName, commitMessage);
     };
 
     const handleDeleteClicked = async () => {
@@ -220,9 +225,18 @@ export const WorkspaceDialogComponent = observer(() => {
         }
     };
 
-    const handleOpenClicked = () => {
+    const handleOpenClicked = async () => {
         if (!workspaceName || !workspaceList.find(item => item.name === workspaceName)) {
             return;
+        }
+        // If a branch is selected and it's not the current branch, switch first
+        if (selectedWorkspace && selectedBranch && selectedBranch !== currentBranch) {
+            await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+            // Refresh branch info after switching
+            const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setSelectedBranch(branchInfo?.current || "");
         }
         openWorkspace(workspaceName);
     };
@@ -252,9 +266,16 @@ export const WorkspaceDialogComponent = observer(() => {
 			: "Open Workspace"
     };
 
-    const handleEntryClicked = (entry: WorkspaceListItem) => {
+    const handleEntryClicked = async (entry: WorkspaceListItem) => {
         setWorkspaceName(entry.name);
         setSelectedWorkspace(entry);
+
+        if (entry.name) {
+            const branchInfo = await appStore.listWorkspaceBranches(entry.name);
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setSelectedBranch(branchInfo?.current || "");
+        }
     };
 
     const handleDoubleClick = useCallback(
@@ -356,6 +377,21 @@ export const WorkspaceDialogComponent = observer(() => {
         );
     }
 
+    const handleSwitchBranch = async () => {
+        if (!selectedWorkspace || !selectedBranch) return;
+        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Switched to branch ${selectedBranch}`));
+            // Refresh branch info after switching
+            const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setSelectedBranch(branchInfo?.current || "");
+            // Optionally reload workspace data
+            await appStore.loadWorkspace(selectedWorkspace.name);
+        }
+    };
+
     return (
         <DraggableDialogComponent dialogProps={dialogProps} helpType={HelpType.WORKSPACE} defaultWidth={750} defaultHeight={550} minWidth={750} minHeight={550} enableResizing={true} dialogId={DialogId.Workspace}>
             <div className={Classes.DIALOG_BODY}>
@@ -364,6 +400,79 @@ export const WorkspaceDialogComponent = observer(() => {
                     <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div>
                 </div>
                 <InputGroup className="workspace-name-input" placeholder="Enter workspace name" value={workspaceName} autoFocus={true} onChange={handleInput} onKeyDown={handleKeyDown} />
+                {mode === WorkspaceDialogMode.Save && currentBranch && (
+                    <div style={{ margin: "8px 0", fontStyle: "italic", color: "#888" }}>
+                        Saving to branch: <b>{currentBranch}</b>
+                    </div>
+                )}
+                {mode === WorkspaceDialogMode.Save && (
+                    <InputGroup
+                        className="workspace-commit-message-input"
+                        placeholder="Enter commit message (optional)"
+                        value={commitMessage}
+                        onChange={e => setCommitMessage(e.currentTarget.value)}
+                        style={{ marginTop: 8 }}
+                    />
+                )}
+                {mode === WorkspaceDialogMode.Branch && selectedWorkspace && (
+                    <div style={{ margin: "8px 0" }}>
+                        <label>Switch Branch:</label>
+                        <select
+                            value={selectedBranch}
+                            onChange={e => setSelectedBranch(e.target.value)}
+                            style={{ marginLeft: 8, minWidth: 120 }}
+                        >
+                            {branches.map(branch => (
+                                <option key={branch} value={branch}>
+                                    {branch}
+                                </option>
+                            ))}
+                        </select>
+                        <AnchorButton
+                            intent={Intent.PRIMARY}
+                            onClick={handleSwitchBranch}
+                            text="Switch"
+                            disabled={isFetching || !selectedBranch}
+                            style={{ marginLeft: 8 }}
+                        />
+                        {currentBranch && (
+                            <span style={{ marginLeft: 16, fontStyle: "italic" }}>
+                                Current: {currentBranch}
+                            </span>
+                        )}
+                    </div>
+                )}
+                {mode === WorkspaceDialogMode.Open && selectedWorkspace && (
+                    <div style={{ margin: "8px 0" }}>
+                        <label>Open Branch:</label>
+                        <select
+                            value={selectedBranch}
+                            onChange={e => setSelectedBranch(e.target.value)}
+                            style={{ marginLeft: 8, minWidth: 120 }}
+                        >
+                            {branches.map(branch => (
+                                <option key={branch} value={branch}>
+                                    {branch}
+                                </option>
+                            ))}
+                        </select>
+                        {currentBranch && (
+                            <span style={{ marginLeft: 16, fontStyle: "italic" }}>
+                                Current: {currentBranch}
+                            </span>
+                        )}
+                    </div>
+                )}
+                {mode === WorkspaceDialogMode.Branch && (
+                    <FormGroup label="Branch Name" labelFor="branch-name-input">
+                        <InputGroup
+                            id="branch-name-input"
+                            placeholder="Enter branch name"
+                            value={branchName}
+                            onChange={e => setBranchName(e.currentTarget.value)}
+                        />
+                    </FormGroup>
+                )}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
@@ -384,8 +493,8 @@ export const WorkspaceDialogComponent = observer(() => {
 
 		    {/*Clone*/}
                     {mode === WorkspaceDialogMode.Clone && (
-                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} />
-                    )}		
+                        <AnchorButton intent={Intent.PRIMARY} onClick={handleCloneClicked} text="Clone" disabled={isFetching || !workspaceName} /> 
+                    )}
 		    {/*Branch*/}
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
