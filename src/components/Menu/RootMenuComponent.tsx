@@ -280,9 +280,11 @@ export class RootMenuComponent extends React.Component {
 
                 <MenuItem text="Open Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Open})} />
                 <MenuItem text="Save Workspace" disabled={appStore.openWorkspaceDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Save})} />
+
                 <MenuItem text="Clone Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Clone})}/>
-		<MenuItem text="Branch Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Branch})}/>
-		<MenuDivider />
+		            <MenuItem text="Branch Workspace" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Branch})}/>
+	            	<MenuDivider />
+
                 <MenuItem text="Preferences" onClick={() => appStore.dialogStore.showDialog(DialogId.Preference)} />
                 {serverSubMenu}
             </Menu>
