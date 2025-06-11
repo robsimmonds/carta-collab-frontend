@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, Dialog,DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
 import {Cell, Column, Region, RenderMode, SelectionModes, Table2, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -23,7 +23,6 @@ export enum WorkspaceDialogMode {
     Create, //new create mode
     Clone,  //new mode for cloning
     Branch  //new mode for branching
-
 }
 
 export const WorkspaceDialogComponent = observer(() => {
@@ -37,6 +36,9 @@ export const WorkspaceDialogComponent = observer(() => {
     const [selectedBranch, setSelectedBranch] = useState<string>("");
     const [currentBranch, setCurrentBranch] = useState<string>("");
     const [branchName, setBranchName] = useState("");
+    const [branchGraph, setBranchGraph] = useState<any[]>([]);
+    const [showGraph, setShowGraph] = useState(false);
+    const [selectedCommit, setSelectedCommit] = useState<any | null>(null);
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
@@ -261,8 +263,12 @@ export const WorkspaceDialogComponent = observer(() => {
         isOpen: mode !== WorkspaceDialogMode.Hidden,
         title: mode === WorkspaceDialogMode.Save
 			? "Save Workspace" 
-			: mode == WorkspaceDialogMode.Create
+			: mode === WorkspaceDialogMode.Create
 			? "Create Workspace"
+			: mode === WorkspaceDialogMode.Clone
+			? "Clone Workspace"
+			: mode === WorkspaceDialogMode.Branch
+			? "Branch Workspace"
 			: "Open Workspace"
     };
 
@@ -369,7 +375,6 @@ export const WorkspaceDialogComponent = observer(() => {
                 enableRowHeader={false}
                 numRows={workspaceList?.length}
                 loadingOptions={isFetching ? [TableLoadingOption.CELLS] : []}
-                getCellClipboardData={null}
             >
                 <Column name="Name" cellRenderer={renderFilenames} />
                 <Column name="Last modified" cellRenderer={renderDates} />
@@ -389,6 +394,14 @@ export const WorkspaceDialogComponent = observer(() => {
             setSelectedBranch(branchInfo?.current || "");
             // Optionally reload workspace data
             await appStore.loadWorkspace(selectedWorkspace.name);
+        }
+    };
+
+    const handleShowGraph = async () => {
+        if (workspaceName) {
+            const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
+            setBranchGraph(graph);
+            setShowGraph(true);
         }
     };
 
@@ -473,6 +486,38 @@ export const WorkspaceDialogComponent = observer(() => {
                         />
                     </FormGroup>
                 )}
+                {showGraph && (
+                    <div style={{ maxHeight: 300, overflow: "auto", background: "#222", color: "#fff", fontFamily: "monospace" }}>
+                        {branchGraph.map(commit => (
+                            <div key={commit.hash}>
+                                <b>{commit.hash.slice(0,7)}</b>
+                                {" ← "}
+                                {commit.parents.map(parent => (
+                                    <span key={parent} style={{ color: "#aaa" }}>{parent.slice(0,7)} </span>
+                                ))}
+                                {commit.subject}
+                                {commit.refs && (
+                                    <span style={{ color: "#ffd700", marginLeft: 8 }}>
+                                        {commit.refs.split(",").map(ref => (
+                                            <span key={ref.trim()} style={{
+                                                background: ref.includes(currentBranch) ? "#4caf50" : "#555",
+                                                color: "#222",
+                                                borderRadius: 4,
+                                                padding: "0 4px",
+                                                marginRight: 4
+                                            }}>{ref.trim()}</span>
+                                        ))}
+                                    </span>
+                                )}
+                                <br/>
+                                <small>{commit.author} &lt;{commit.email}&gt; {commit.date}</small>
+                                {commit.parents.length > 1 && (
+                                    <span style={{ color: "#f44336", marginLeft: 8 }}>[merge]</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
@@ -481,7 +526,7 @@ export const WorkspaceDialogComponent = observer(() => {
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleSaveClicked} text="Save" disabled={isFetching || !workspaceName} />
                     )}
 
-		    {mode == WorkspaceDialogMode.Open && (
+		    {mode === WorkspaceDialogMode.Open && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleOpenClicked} text="Open" disabled={isFetching || !selectedRegions?.length} />
                     )}
 		 
@@ -489,7 +534,6 @@ export const WorkspaceDialogComponent = observer(() => {
 		    {mode === WorkspaceDialogMode.Create && (
 			<AnchorButton intent={Intent.PRIMARY} onClick={handleCreateClicked} text="Create" disabled={isFetching || !workspaceName} />
 		    )}
-
 
 		    {/*Clone*/}
                     {mode === WorkspaceDialogMode.Clone && (
@@ -499,9 +543,26 @@ export const WorkspaceDialogComponent = observer(() => {
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
                     )} 
-	       </div>
-
+                    <AnchorButton icon="git-branch" text="Show Branch Topology" onClick={handleShowGraph} />
+	        </div>
             </div>
+            <Dialog
+                isOpen={!!selectedCommit}
+                onClose={() => setSelectedCommit(null)}
+                title={`Commit ${selectedCommit?.hash?.slice(0,7)}`}
+            >
+                {selectedCommit && (
+                    <div style={{ fontFamily: "monospace" }}>
+                        <div><b>Hash:</b> {selectedCommit.hash}</div>
+                        <div><b>Author:</b> {selectedCommit.author} &lt;{selectedCommit.email}&gt;</div>
+                        <div><b>Date:</b> {selectedCommit.date}</div>
+                        <div><b>Branches/Tags:</b> {selectedCommit.refs}</div>
+                        <div><b>Parents:</b> {selectedCommit.parents.join(", ")}</div>
+                        <div><b>Subject:</b> {selectedCommit.subject}</div>
+                        <div><b>Message:</b><pre>{selectedCommit.body}</pre></div>
+                    </div>
+                )}
+            </Dialog>
         </DraggableDialogComponent>
     );
 });

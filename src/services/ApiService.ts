@@ -693,4 +693,18 @@ export class ApiService {
         }
         return false;
     };
+
+    public getWorkspaceTopology = async (workspaceName: string): Promise<any[]> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspaceTopology`;
+                const response = await this.axiosInstance.post(url, { workspaceName });
+                return response?.data?.graph;
+            } catch (err) {
+                console.log(err);
+                return [];
+            }
+        }
+        return [];
+    };
 }
