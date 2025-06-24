@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Supported flux density calculations with various pixel units in the statistics widget ([#2521](https://github.com/CARTAvis/carta-frontend/issues/2521)).
 * Enhanced support for displaying channel, spectral, and velocity information in channel map mode ([#2492](https://github.com/CARTAvis/carta-frontend/issues/2492)).
 * Supported image export with normal, high, and highest resolution in channel map mode ([#2492](https://github.com/CARTAvis/carta-frontend/issues/2492)).
+* Added support for generating initial values for multiple Gaussian image fitting ([#2095](https://github.com/CARTAvis/carta-frontend/issues/2095)).
 ### Changed
 * The dropdown options in the z profile widget becomes scrollable with small widget width ([#1600](https://github.com/CARTAvis/carta-frontend/issues/1600)).
 * When a PV preview is active, the image view shows the page with the source image instead of the first page.
