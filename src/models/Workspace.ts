@@ -123,6 +123,8 @@ export interface Workspace {
     selectedFile?: number;
     thumbnail?: string;
     date?: number;
+    users?: string[];
+    
 }
 
 export interface WorkspaceListItem {
