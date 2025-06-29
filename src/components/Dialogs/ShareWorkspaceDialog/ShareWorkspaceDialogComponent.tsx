@@ -13,6 +13,7 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     const [shareKey, setShareKey] = useState<string>("");
     const [isGeneratingLink, setIsGeneratingLink] = useState<boolean>(false);
     const [saveBeforeShare, setSaveBeforeShare] = useState<boolean>(false);
+    const [shareWith, setShareWith] = useState<string>("");
     const appStore = AppStore.Instance;
 
     // Reset the dialog when the active workspace changes
@@ -21,6 +22,7 @@ export const ShareWorkspaceDialogComponent = observer(() => {
         setShareKey("");
         setIsGeneratingLink(false);
         setSaveBeforeShare(false);
+        setShareWith("");
     }, [appStore.activeWorkspace, shareWorkspaceDialogVisible]);
 
     const {activeWorkspace} = appStore;
@@ -37,17 +39,14 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     };
 
     const handleGenerateClicked = async () => {
-        if (!activeWorkspace?.id) {
-            return;
-        }
-
+        if (!activeWorkspace?.id) return;
         setIsGeneratingLink(true);
-
         try {
             if (activeWorkspace.name && saveBeforeShare) {
                 await appStore.saveWorkspace(activeWorkspace.name);
             }
-            const shareKey = await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id);
+
+            const shareKey = await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith);
             setShareKey(shareKey);
         } catch (err) {
             console.log(err);
@@ -95,6 +94,12 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     This workspace will be marked as shared, and a shareable link will be generated. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
                     to adjust file permissions.
                 </p>
+                <InputGroup
+                    placeholder="Enter username to share with"
+                    value={shareWith}
+                    onChange={e => setShareWith(e.target.value)}
+                    className="share-username-input"
+                />
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>{footer}</div>
