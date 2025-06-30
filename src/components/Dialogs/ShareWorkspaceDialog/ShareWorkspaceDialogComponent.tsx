@@ -94,6 +94,16 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     This workspace will be marked as shared, and a shareable link will be generated. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
                     to adjust file permissions.
                 </p>
+                {activeWorkspace?.users && activeWorkspace.users.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                        <b>Currently shared with:</b>
+                        <ul>
+                            {activeWorkspace.users.map(user => (
+                                <li key={user}>{user}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
                 <InputGroup
                     placeholder="Enter username to share with"
                     value={shareWith}
