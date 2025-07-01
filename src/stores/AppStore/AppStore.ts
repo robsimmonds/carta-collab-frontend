@@ -3667,6 +3667,8 @@ export class AppStore {
         const success = await this.apiService.switchWorkspaceBranch(name, branch);
         if (success) {
             AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
+            // Reload the workspace to reflect the new branch
+            await this.loadWorkspace(name);
         } else {
             AlertStore.Instance.showAlert(`Switching branch to ${branch} in workspace ${name} failed!`);
         }

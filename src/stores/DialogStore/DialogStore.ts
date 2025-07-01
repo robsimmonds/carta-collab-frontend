@@ -22,7 +22,10 @@ export enum DialogId {
     Vector = "vector-dialog",
     Workspace = "workspace-dialog",
     ShareWorkspace = "share-work-dialog",
-    Hotkey = "hotkey-dialog"
+    Hotkey = "hotkey-dialog",
+    SaveWorkspace = "save-workspace-dialog",
+    CloneWorkspace = "clone-workspace-dialog",
+    BranchWorkspace = "branch-workspace-dialog"
 }
 
 interface showDialogOptions {

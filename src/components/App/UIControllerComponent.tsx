@@ -4,6 +4,8 @@ import {observer} from "mobx-react";
 import {HelpDrawerComponent, RootMenuComponent, SplashScreenComponent} from "components";
 import {
     AboutDialogComponent,
+    BranchWorkspaceDialogComponent,
+    CloneWorkspaceDialogComponent,
     CodeSnippetDialogComponent,
     ContourDialogComponent,
     ExternalPageDialogComponent,
@@ -14,12 +16,12 @@ import {
     OnlineDataQueryDialogComponent,
     PreferenceDialogComponent,
     RegionDialogComponent,
+    SaveWorkspaceDialogComponent,
     ShareWorkspaceDialogComponent,
     StokesDialogComponent,
     TelemetryDialogComponent,
     VectorOverlayDialogComponent,
-    WorkspaceDialogComponent
-} from "components/Dialogs";
+    WorkspaceDialogComponent} from "components/Dialogs";
 
 @observer
 export class UIControllerComponent extends React.Component {
@@ -36,6 +38,9 @@ export class UIControllerComponent extends React.Component {
                 <PreferenceDialogComponent />
                 <LayoutDialogComponent />
                 <WorkspaceDialogComponent />
+                <SaveWorkspaceDialogComponent />
+                <CloneWorkspaceDialogComponent />
+                <BranchWorkspaceDialogComponent />
                 <ShareWorkspaceDialogComponent />
                 <CodeSnippetDialogComponent />
                 <AboutDialogComponent />
