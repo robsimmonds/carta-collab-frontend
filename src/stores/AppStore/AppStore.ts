@@ -3003,6 +3003,16 @@ export class AppStore {
         AlertStore.Instance.showAlert(`Branching workspace ${name} failed!`);
     }
 
+    public async deleteWorkspaceBranch(name: string, branch: string): Promise<boolean> {
+        const success = await this.apiService.deleteWorkspaceBranch(name, branch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Branch ${branch} deleted.`));
+        } else {
+            AlertStore.Instance.showAlert(`Deleting branch ${branch} failed!`);
+        }
+        return success;
+    }
+
     async deleteWorkspace(name: string) {
         try {
             const success = await this.apiService.clearWorkspace(name);

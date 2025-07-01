@@ -627,6 +627,20 @@ export class ApiService {
         }
     }
 
+    public deleteWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/deleteWorkspaceBranch`;
+                const response = await this.axiosInstance.delete(url, { data: { workspaceName, branchName } });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
     public getSharedWorkspaceKey = async (workspaceId: string, username?: string): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {

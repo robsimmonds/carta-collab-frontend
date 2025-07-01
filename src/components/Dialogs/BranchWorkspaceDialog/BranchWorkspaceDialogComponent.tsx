@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useEffect,useState } from "react";
-import { Button, Classes, Dialog, FormGroup,InputGroup } from "@blueprintjs/core";
+import { Button, Classes, Dialog, FormGroup,InputGroup, Tooltip } from "@blueprintjs/core";
 import { observer } from "mobx-react";
 
 import { AppStore, DialogId, DialogStore } from "stores";
@@ -12,7 +12,6 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     const isOpen = dialogStore.dialogVisible.get(DialogId.BranchWorkspace);
     const workspace = appStore.activeWorkspace;
     const [branches, setBranches] = useState<string[]>([]);
-    const [selectedBranch, setSelectedBranch] = useState<string>("");
     const [currentBranch, setCurrentBranch] = useState<string>("");
 
     useEffect(() => {
@@ -21,7 +20,6 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                 const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
                 setBranches(branchInfo?.branches || []);
                 setCurrentBranch(branchInfo?.current || "");
-                setSelectedBranch(branchInfo?.current || "");
             }
         }
         if (isOpen && workspace) {
@@ -41,15 +39,14 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         handleClose();
     };
 
-    const handleSwitchBranch = async () => {
-        if (!workspace || !selectedBranch || selectedBranch === currentBranch) return;
-        const success = await appStore.switchWorkspaceBranch(workspace.name, selectedBranch);
+    const handleSwitchBranch = async (branchToSwitch: string) => {
+        if (!workspace || !branchToSwitch || branchToSwitch === currentBranch) return;
+        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch);
         if (success) {
             // Refresh branch info after switching
             const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
             setBranches(branchInfo?.branches || []);
             setCurrentBranch(branchInfo?.current || "");
-            setSelectedBranch(branchInfo?.current || "");
         }
     };
 
@@ -74,30 +71,52 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                         autoFocus
                     />
                 </FormGroup>
-                <FormGroup label="Switch Branch">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                        <select
-                            value={selectedBranch}
-                            onChange={e => setSelectedBranch(e.target.value)}
-                            style={{ minWidth: 120 }}
-                        >
-                            {branches.map(branch => (
-                                <option key={branch} value={branch}>
+                <FormGroup label="Branches">
+                    <div>
+                        {branches.map(branch => (
+                            <div key={branch} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+                                <span
+                                    style={{
+                                        fontWeight: branch === currentBranch ? "bold" : "normal",
+                                        color: branch === currentBranch ? "#137cbd" : undefined,
+                                        flex: 1,
+                                    }}
+                                >
                                     {branch}
-                                </option>
-                            ))}
-                        </select>
-                        <span style={{ marginLeft: 16, fontStyle: "italic" }}>
-                            Current: {currentBranch}
-                        </span>
-                        <Button
-                            style={{ marginLeft: 16 }}
-                            intent="primary"
-                            onClick={handleSwitchBranch}
-                            disabled={!workspace || !selectedBranch || selectedBranch === currentBranch}
-                        >
-                            Switch
-                        </Button>
+                                    {branch === currentBranch && " (current)"}
+                                </span>
+                                {branch !== currentBranch && (
+                                    <Tooltip content="Delete branch">
+                                        <Button
+                                            icon="trash"
+                                            minimal
+                                            intent="danger"
+                                            style={{ marginLeft: 8 }}
+                                            onClick={async () => {
+                                                if (window.confirm(`Delete branch "${branch}"? This cannot be undone.`)) {
+                                                    await appStore.deleteWorkspaceBranch(workspace.name, branch);
+                                                    // Refresh branch list
+                                                    const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
+                                                    setBranches(branchInfo?.branches || []);
+                                                    setCurrentBranch(branchInfo?.current || "");
+                                                }
+                                            }}
+                                        />
+                                    </Tooltip>
+                                )}
+                                {branch !== currentBranch && (
+                                    <Button
+                                        style={{ marginLeft: 8 }}
+                                        intent="primary"
+                                        text="Switch"
+                                        onClick={async () => {
+                                            await handleSwitchBranch(branch);
+                                        }}
+                                        disabled={!workspace || branch === currentBranch}
+                                    />
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </FormGroup>
             </div>
