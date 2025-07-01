@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button, Classes, Dialog, FormGroup,InputGroup } from "@blueprintjs/core";
+import { Button, Classes, Dialog, FormGroup } from "@blueprintjs/core";
 import { observer } from "mobx-react";
 
 import { AppStore, DialogId, DialogStore } from "stores";
@@ -32,7 +32,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
         >
             <div className={Classes.DIALOG_BODY}>
                 <FormGroup label="Workspace Name">
-                    <InputGroup value={workspace?.name || ""} readOnly />
+                    <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
             </div>
             <div className={Classes.DIALOG_FOOTER}>

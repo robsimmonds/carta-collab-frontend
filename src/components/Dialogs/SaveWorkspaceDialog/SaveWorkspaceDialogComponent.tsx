@@ -35,7 +35,7 @@ export const SaveWorkspaceDialogComponent = observer(() => {
         >
             <div className={Classes.DIALOG_BODY}>
                 <FormGroup label="Workspace Name">
-                    <InputGroup value={workspace?.name || ""} readOnly />
+                    <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
                 <FormGroup label="Commit Message (optional)">
                     <InputGroup

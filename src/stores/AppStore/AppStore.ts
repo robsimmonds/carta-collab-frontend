@@ -3008,6 +3008,10 @@ export class AppStore {
             const success = await this.apiService.clearWorkspace(name);
             if (success) {
                 AppToaster.show(SuccessToast("console", `Workspace ${name} deleted successfully.`, SnippetStore.ToasterTimeout));
+                // If the deleted workspace is the active one, clear it
+                if (this.activeWorkspace && this.activeWorkspace.name === name) {
+                    this.activeWorkspace = undefined;
+                }
                 return;
             }
         } catch (err) {

@@ -64,7 +64,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         >
             <div className={Classes.DIALOG_BODY}>
                 <FormGroup label="Workspace Name">
-                    <InputGroup value={workspace?.name || ""} readOnly />
+                    <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
                 <FormGroup label="Branch Name" helperText="Enter a name for the new branch.">
                     <InputGroup
