@@ -131,6 +131,17 @@ export const WorkspaceInfoComponent = (props: {workspaceListItem?: WorkspaceList
                     </tbody>
                 </table>
             </Callout>
+            {/* Display users the workspace is shared with */}
+            {workspace.users && workspace.users.length > 0 && (
+                <Callout className="workspace-users">
+                    <b>Shared with users:</b>
+                    <ul>
+                        {workspace.users.map(user => (
+                            <li key={user}>{user}</li>
+                        ))}
+                    </ul>
+                </Callout>
+            )}
         </div>
     );
 };

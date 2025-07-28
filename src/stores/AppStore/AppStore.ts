@@ -3014,11 +3014,25 @@ export class AppStore {
         AlertStore.Instance.showAlert(`Branching workspace ${name} failed!`);
     }
 
+    public async deleteWorkspaceBranch(name: string, branch: string): Promise<boolean> {
+        const success = await this.apiService.deleteWorkspaceBranch(name, branch);
+        if (success) {
+            AppToaster.show(SuccessToast("console", `Branch ${branch} deleted.`));
+        } else {
+            AlertStore.Instance.showAlert(`Deleting branch ${branch} failed!`);
+        }
+        return success;
+    }
+
     async deleteWorkspace(name: string) {
         try {
             const success = await this.apiService.clearWorkspace(name);
             if (success) {
                 AppToaster.show(SuccessToast("console", `Workspace ${name} deleted successfully.`, SnippetStore.ToasterTimeout));
+                // If the deleted workspace is the active one, clear it
+                if (this.activeWorkspace && this.activeWorkspace.name === name) {
+                    this.activeWorkspace = undefined;
+                }
                 return;
             }
         } catch (err) {
@@ -3678,6 +3692,8 @@ export class AppStore {
         const success = await this.apiService.switchWorkspaceBranch(name, branch);
         if (success) {
             AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
+            // Reload the workspace to reflect the new branch
+            await this.loadWorkspace(name);
         } else {
             AlertStore.Instance.showAlert(`Switching branch to ${branch} in workspace ${name} failed!`);
         }

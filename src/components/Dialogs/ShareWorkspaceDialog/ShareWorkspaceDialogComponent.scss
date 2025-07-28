@@ -1,6 +1,10 @@
 @import "~@blueprintjs/core/lib/scss/variables.scss";
 
 .share-workspace-dialog {
+    .share-username-input {
+        margin-top: 10px;
+    }
+    
     .#{$ns}-dialog-footer-actions {
         align-items: baseline;
         justify-content: space-between;

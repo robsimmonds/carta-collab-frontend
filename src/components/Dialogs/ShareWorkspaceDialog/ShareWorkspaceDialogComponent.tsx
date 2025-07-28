@@ -3,24 +3,26 @@ import {AnchorButton, Checkbox, Classes, Dialog, DialogProps, InputGroup, Intent
 import {observer} from "mobx-react";
 
 import {AppStore, DialogId} from "stores";
-import {copyToClipboard} from "utilities";
 
 import {AppToaster, WarningToast} from "../../Shared";
 
 import "./ShareWorkspaceDialogComponent.scss";
 
 export const ShareWorkspaceDialogComponent = observer(() => {
-    const [shareKey, setShareKey] = useState<string>("");
-    const [isGeneratingLink, setIsGeneratingLink] = useState<boolean>(false);
+    // Remove shareKey and isGeneratingLink state
+    // const [shareKey, setShareKey] = useState<string>("");
+    // const [isGeneratingLink, setIsGeneratingLink] = useState<boolean>(false);
     const [saveBeforeShare, setSaveBeforeShare] = useState<boolean>(false);
+    const [shareWith, setShareWith] = useState<string>("");
     const appStore = AppStore.Instance;
 
     // Reset the dialog when the active workspace changes
     let shareWorkspaceDialogVisible = appStore.dialogStore.dialogVisible.get(DialogId.ShareWorkspace);
     useEffect(() => {
-        setShareKey("");
-        setIsGeneratingLink(false);
+        // setShareKey("");
+        // setIsGeneratingLink(false);
         setSaveBeforeShare(false);
+        setShareWith("");
     }, [appStore.activeWorkspace, shareWorkspaceDialogVisible]);
 
     const {activeWorkspace} = appStore;
@@ -37,64 +39,80 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     };
 
     const handleGenerateClicked = async () => {
-        if (!activeWorkspace?.id) {
-            return;
-        }
-
-        setIsGeneratingLink(true);
-
+        if (!activeWorkspace?.id) return;
+        // setIsGeneratingLink(true);
         try {
             if (activeWorkspace.name && saveBeforeShare) {
                 await appStore.saveWorkspace(activeWorkspace.name);
             }
-            const shareKey = await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id);
-            setShareKey(shareKey);
+            // const shareKey = await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith);
+            // setShareKey(shareKey);
+            // Instead, just call the share logic (e.g., add user to workspace)
+            await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith);
+            AppToaster.show({ message: `Workspace shared with ${shareWith}`, intent: Intent.SUCCESS });
         } catch (err) {
             console.log(err);
-            AppToaster.show(WarningToast("Could not generate a sharing link."));
+            AppToaster.show(WarningToast("Could not share workspace."));
         }
     };
 
     let footer: ReactNode;
 
-    if (shareKey) {
-        const baseUrl = window.location.href.split("?")[0];
-        const link = `${baseUrl}?key=${shareKey}`;
-        const copyButton = <AnchorButton intent={Intent.SUCCESS} minimal={true} icon="clipboard" onClick={() => copyToClipboard(link)} />;
-        footer = <InputGroup fill={true} intent={Intent.SUCCESS} readOnly={true} defaultValue={link} rightElement={copyButton} />;
-    } else {
-        const isReadOnly = !activeWorkspace?.editable || !activeWorkspace.name;
-        const saveCheckbox = <Checkbox label="Save workspace before sharing" disabled={isReadOnly} checked={saveBeforeShare} onChange={() => setSaveBeforeShare(!saveBeforeShare)} />;
-        const readOnlyTooltip = (
-            <span>
-                Workspace is not editable
-                <br />
-                <i>
-                    <small>You will need to save as a new workspace before sharing to preserve changes</small>
-                </i>
-            </span>
-        );
-        footer = (
-            <>
-                {isReadOnly ? (
-                    <Tooltip usePortal={false} content={readOnlyTooltip}>
-                        {saveCheckbox}
-                    </Tooltip>
-                ) : (
-                    saveCheckbox
-                )}
-                <AnchorButton disabled={isGeneratingLink} intent={Intent.PRIMARY} text="Generate link" onClick={handleGenerateClicked} />
-            </>
-        );
-    }
+    // Remove shareKey logic from footer
+    // if (shareKey) {
+    //     const baseUrl = window.location.href.split("?")[0];
+    //     const link = `${baseUrl}?key=${shareKey}`;
+    //     const copyButton = <AnchorButton intent={Intent.SUCCESS} minimal={true} icon="clipboard" onClick={() => copyToClipboard(link)} />;
+    //     footer = <InputGroup fill={true} intent={Intent.SUCCESS} readOnly={true} defaultValue={link} rightElement={copyButton} />;
+    // } else {
+    const isReadOnly = !activeWorkspace?.editable || !activeWorkspace.name;
+    const saveCheckbox = <Checkbox label="Save workspace before sharing" disabled={isReadOnly} checked={saveBeforeShare} onChange={() => setSaveBeforeShare(!saveBeforeShare)} />;
+    const readOnlyTooltip = (
+        <span>
+            Workspace is not editable
+            <br />
+            <i>
+                <small>You will need to save as a new workspace before sharing to preserve changes</small>
+            </i>
+        </span>
+    );
+    footer = (
+        <>
+            {isReadOnly ? (
+                <Tooltip usePortal={false} content={readOnlyTooltip}>
+                    {saveCheckbox}
+                </Tooltip>
+            ) : (
+                saveCheckbox
+            )}
+            <AnchorButton intent={Intent.PRIMARY} text="Share" onClick={handleGenerateClicked} />
+        </>
+    );
+    // }
 
     return (
         <Dialog {...dialogProps}>
             <div className={Classes.DIALOG_BODY}>
                 <p>
-                    This workspace will be marked as shared, and a shareable link will be generated. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
+                    This workspace will be marked as shared. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
                     to adjust file permissions.
                 </p>
+                {activeWorkspace?.users && activeWorkspace.users.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                        <b>Currently shared with:</b>
+                        <ul>
+                            {activeWorkspace.users.map(user => (
+                                <li key={user}>{user}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                <InputGroup
+                    placeholder="Enter username to share with"
+                    value={shareWith}
+                    onChange={e => setShareWith(e.target.value)}
+                    className="share-username-input"
+                />
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>{footer}</div>

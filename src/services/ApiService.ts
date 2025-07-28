@@ -649,11 +649,26 @@ export class ApiService {
         }
     }
 
-    public getSharedWorkspaceKey = async (workspaceId: string): Promise<string | undefined> => {
+    public deleteWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/deleteWorkspaceBranch`;
+                const response = await this.axiosInstance.delete(url, { data: { workspaceName, branchName } });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
+    public getSharedWorkspaceKey = async (workspaceId: string, username?: string): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/share/workspace/${workspaceId}`;
-                const response = await this.axiosInstance.post(url);
+                // Send username in the body if provided
+                const response = await this.axiosInstance.post(url, username ? { username } : undefined);
                 return response?.data?.success ? response.data.shareKey : undefined;
             } catch (err) {
                 console.log(err);
@@ -714,5 +729,19 @@ export class ApiService {
             }
         }
         return false;
+    };
+
+    public getWorkspaceTopology = async (workspaceName: string): Promise<any[]> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspaceTopology`;
+                const response = await this.axiosInstance.post(url, { workspaceName });
+                return response?.data?.graph;
+            } catch (err) {
+                console.log(err);
+                return [];
+            }
+        }
+        return [];
     };
 }

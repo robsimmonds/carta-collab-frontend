@@ -1,4 +1,6 @@
 export * from "./AboutDialog/AboutDialogComponent";
+export * from "./BranchWorkspaceDialog/BranchWorkspaceDialogComponent";
+export * from "./CloneWorkspaceDialog/CloneWorkspaceDialogComponent";
 export * from "./CodeSnippetDialog/CodeSnippetDialogComponent";
 export * from "./ContourDialog/ContourDialogComponent";
 export * from "./DraggableDialog/DraggableDialogComponent";
@@ -12,6 +14,7 @@ export * from "./LayoutDialog/LayoutDialogComponent";
 export * from "./OnlineDataQueryDialog/OnlineDataQueryDialogComponent";
 export * from "./PreferenceDialog/PreferenceDialogComponent";
 export * from "./RegionDialog/RegionDialogComponent";
+export * from "./SaveWorkspaceDialog/SaveWorkspaceDialogComponent";
 export * from "./ShareWorkspaceDialog/ShareWorkspaceDialogComponent";
 export * from "./StokesDialog/StokesDialogComponent";
 export * from "./TaskProgressDialog/TaskProgressDialogComponent";
