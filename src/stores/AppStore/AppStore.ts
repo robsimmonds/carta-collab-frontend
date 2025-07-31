@@ -3672,8 +3672,8 @@ export class AppStore {
     }
 
     // List branches for a workspace
-    public async listWorkspaceBranches(name: string): Promise<{branches: string[], current: string} | undefined> {
-        return await this.apiService.listWorkspaceBranches(name);
+    public async listWorkspaceBranches(name: string,branchName?: string): Promise<{branches: string[], current: string} | undefined> {
+        return await this.apiService.listWorkspaceBranches(name, branchName);
     }
 
     // Switch to a branch in a workspace

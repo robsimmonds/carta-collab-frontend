@@ -680,11 +680,11 @@ export class ApiService {
     };
 
     // List branches for a workspace
-    public listWorkspaceBranches = async (workspaceName: string): Promise<{branches: string[], current: string} | undefined> => {
+    public listWorkspaceBranches = async (workspaceName: string, branchName?: string): Promise<{branches: string[], current: string} | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/listWorkspaceBranches`;
-                const response = await this.axiosInstance.post(url, { workspaceName });
+                const response = await this.axiosInstance.post(url, { workspaceName,branchName });
                 return { branches: response?.data?.branches, current: response?.data?.current };
             } catch (err) {
                 console.log(err);
