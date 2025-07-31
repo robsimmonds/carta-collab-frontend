@@ -506,10 +506,15 @@ export class ApiService {
         }
     };
 
-    public getWorkspace = async (name: string, isKey = false): Promise<Workspace | undefined> => {
+    public getWorkspace = async (name: string,branchName?: string, isKey = false): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
-                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${isKey ? "key/" : ""}${name}`;
+                let url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${isKey ? "key/" : ""}${name}`;
+
+                if (branchName) {
+                    url += `?branchName=${encodeURIComponent(branchName)}`;
+                }
+
                 const response = await this.axiosInstance.get<{workspace: Workspace; success: boolean}>(url);
                 if (response?.data?.success) {
                     return response.data.workspace;
@@ -562,11 +567,11 @@ export class ApiService {
         }
     };
 
-    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string): Promise<Workspace | undefined> => {
+    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string, branchName?: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/setWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage});
+                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage,branchName });
                 if (res.data?.workspace?.id) {
                     workspace.id = res.data?.workspace?.id;
                 }

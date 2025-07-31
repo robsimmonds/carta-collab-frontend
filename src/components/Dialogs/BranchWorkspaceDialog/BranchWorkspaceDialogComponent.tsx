@@ -17,15 +17,15 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     useEffect(() => {
         async function fetchBranches() {
             if (workspace) {
-                const branchInfo = await appStore.listWorkspaceBranches(workspace.name,currentBranch);
+                const branchInfo = await appStore.listWorkspaceBranches(workspace.name,currentBranch || "master");
                 setBranches(branchInfo?.branches || []);
-                setCurrentBranch(branchInfo?.current || "");
+                setCurrentBranch(branchInfo?.current || (currentBranch || "master"));
             }
         }
-        if (isOpen && workspace) {
+        if (isOpen && workspace?.name) {
             fetchBranches();
         }
-    }, [isOpen, workspace, appStore, currentBranch]);
+    }, [isOpen, workspace?.name, appStore, currentBranch]);
 
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.BranchWorkspace);
@@ -44,8 +44,9 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch);
         if (success) {
             setCurrentBranch(branchToSwitch); // update current branch
+            appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
             // Refresh branch info after switching
-            const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, branchToSwitch);
             setBranches(branchInfo?.branches || []);
             setCurrentBranch(branchInfo?.current || "");
         }

@@ -170,6 +170,13 @@ export class AppStore {
     private previousConnectionStatus: ConnectionStatus;
     private canvasUpdatedTimer;
 
+    // Global state for current branch
+    public currentWorkspaceBranch: string = "master";
+
+    public setCurrentWorkspaceBranch(branch: string) {
+        this.currentWorkspaceBranch = branch;
+    }
+
     public getAppContainer = (): HTMLElement => {
         return this.appContainer;
     };
@@ -261,7 +268,7 @@ export class AppStore {
         // Load workspace first if it exists
         if (hasWorkspaceParam) {
             try {
-                yield this.loadWorkspace(workspaceKeyParam ?? workspaceNameParam, !!workspaceKeyParam);
+                yield this.loadWorkspace(workspaceKeyParam ?? workspaceNameParam,!! workspaceKeyParam);
             } catch (err) {
                 console.error(err);
             }
@@ -2537,11 +2544,11 @@ export class AppStore {
     };
 
     @flow.bound
-    public *loadWorkspace(name: string, isKey = false) {
+    public *loadWorkspace(name: string,  isKey = false) {
         this.loadingWorkspace = true;
 
         try {
-            const workspace: Workspace = yield this.apiService.getWorkspace(name, isKey);
+            const workspace: Workspace = yield this.apiService.getWorkspace(name,this.currentWorkspaceBranch, isKey);
             if (!workspace) {
                 this.loadingWorkspace = false;
                 AppToaster.show({icon: "warning-sign", message: `Could not load workspace "${name}"`, intent: "danger", timeout: 3000});
@@ -2822,7 +2829,7 @@ export class AppStore {
     }
 
     @flow.bound
-    public *saveWorkspace(name: string, commitMessage?: string) {
+    public *saveWorkspace(name: string, commitMessage?: string, branchName?: string) {
         const workspace: Workspace = {
             workspaceVersion: 0,
             frontendVersion: CARTA_INFO.version,
@@ -2947,7 +2954,7 @@ export class AppStore {
         if (this.activeFrame) {
             workspace.selectedFile = this.activeFrameFileId;
         }
-        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage);
+        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage, branchName);
         if (savedWorkspace) {
             this.activeWorkspace = savedWorkspace;
             return true;
@@ -3680,6 +3687,8 @@ export class AppStore {
     public async switchWorkspaceBranch(name: string, branch: string): Promise<boolean> {
         const success = await this.apiService.switchWorkspaceBranch(name, branch);
         if (success) {
+            this.setCurrentWorkspaceBranch(branch);
+            
             AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
             // Reload the workspace to reflect the new branch
             await this.loadWorkspace(name);
