@@ -3684,16 +3684,17 @@ export class AppStore {
     }
 
     // Switch to a branch in a workspace
-    public async switchWorkspaceBranch(name: string, branch: string): Promise<boolean> {
-        const success = await this.apiService.switchWorkspaceBranch(name, branch);
+    public async switchWorkspaceBranch(name: string, newBranch: string,prevBranch: string): Promise<boolean> {
+        //AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} from branch ${prevBranch} in workspace ${name}.`));
+        const success = await this.apiService.switchWorkspaceBranch(name, newBranch, prevBranch);
         if (success) {
-            this.setCurrentWorkspaceBranch(branch);
+            this.setCurrentWorkspaceBranch(newBranch);
             
-            AppToaster.show(SuccessToast("console", `Switched to branch ${branch} in workspace ${name}.`));
+            AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} in workspace ${name}.`));
             // Reload the workspace to reflect the new branch
             await this.loadWorkspace(name);
         } else {
-            AlertStore.Instance.showAlert(`Switching branch to ${branch} in workspace ${name} failed!`);
+            AlertStore.Instance.showAlert(`Switching branch to ${newBranch} in workspace ${name} failed!`);
         }
         return success;
     }

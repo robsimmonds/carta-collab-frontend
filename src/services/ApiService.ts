@@ -700,11 +700,11 @@ export class ApiService {
     };
 
     // Switch to a branch in a workspace
-    public switchWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+    public switchWorkspaceBranch = async (workspaceName: string, newBranch: string, prevBranch: string): Promise<boolean> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/switchWorkspaceBranch`;
-                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
+                const response = await this.axiosInstance.put(url, { workspaceName, newBranch, prevBranch});
                 return response?.data?.success;
             } catch (err) {
                 console.log(err);

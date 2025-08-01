@@ -233,7 +233,7 @@ export const WorkspaceDialogComponent = observer(() => {
         }
         // If a branch is selected and it's not the current branch, switch first
         if (selectedWorkspace && selectedBranch && selectedBranch !== currentBranch) {
-            await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+            await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch, currentBranch);
             // Refresh branch info after switching
             const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
             setBranches(branchInfo?.branches || []);
@@ -384,7 +384,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
     const handleSwitchBranch = async () => {
         if (!selectedWorkspace || !selectedBranch) return;
-        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch, currentBranch);
         if (success) {
             AppToaster.show(SuccessToast("console", `Switched to branch ${selectedBranch}`));
             // Refresh branch info after switching

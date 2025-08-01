@@ -41,7 +41,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
 
     const handleSwitchBranch = async (branchToSwitch: string) => {
         if (!workspace || !branchToSwitch || branchToSwitch === currentBranch) return;
-        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch);
+        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch, currentBranch);
         if (success) {
             setCurrentBranch(branchToSwitch); // update current branch
             appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
