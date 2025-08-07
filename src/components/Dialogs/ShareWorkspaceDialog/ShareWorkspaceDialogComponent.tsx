@@ -15,6 +15,7 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     const [saveBeforeShare, setSaveBeforeShare] = useState<boolean>(false);
     const [shareWith, setShareWith] = useState<string>("");
     const appStore = AppStore.Instance;
+    const [role, setRole] = useState<"editor" | "viewer">("viewer");
 
     // Reset the dialog when the active workspace changes
     let shareWorkspaceDialogVisible = appStore.dialogStore.dialogVisible.get(DialogId.ShareWorkspace);
@@ -48,8 +49,8 @@ export const ShareWorkspaceDialogComponent = observer(() => {
             // const shareKey = await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith);
             // setShareKey(shareKey);
             // Instead, just call the share logic (e.g., add user to workspace)
-            await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith);
-            AppToaster.show({ message: `Workspace shared with ${shareWith}`, intent: Intent.SUCCESS });
+            await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith, role);
+            AppToaster.show({ message: `Workspace shared with ${shareWith} as ${role}`, intent: Intent.SUCCESS });
         } catch (err) {
             console.log(err);
             AppToaster.show(WarningToast("Could not share workspace."));
@@ -113,6 +114,13 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     onChange={e => setShareWith(e.target.value)}
                     className="share-username-input"
                 />
+                <div style={{ margin: "10px 0" }}>
+                    <label style={{ marginRight: 8 }}>Role:</label>
+                    <select value={role} onChange={e => setRole(e.target.value as "editor" | "viewer")}>
+                        <option value="editor">Editor</option>
+                        <option value="viewer">Viewer</option>
+                    </select>
+                </div>
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>{footer}</div>

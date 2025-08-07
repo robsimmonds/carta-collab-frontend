@@ -646,12 +646,15 @@ export class ApiService {
         return false;
     };
 
-    public getSharedWorkspaceKey = async (workspaceId: string, username?: string): Promise<string | undefined> => {
+    public getSharedWorkspaceKey = async (workspaceId: string, username?: string, role?: "editor" | "viewer"): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/share/workspace/${workspaceId}`;
                 // Send username in the body if provided
-                const response = await this.axiosInstance.post(url, username ? { username } : undefined);
+                const data: any = {};
+                if (username) data.username = username;
+                if (role) data.role = role;
+                const response = await this.axiosInstance.post(url, Object.keys(data).length ? data : undefined);
                 return response?.data?.success ? response.data.shareKey : undefined;
             } catch (err) {
                 console.log(err);
