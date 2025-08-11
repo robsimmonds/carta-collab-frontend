@@ -124,6 +124,7 @@ export interface Workspace {
     thumbnail?: string;
     date?: number;
     users?: string[];
+    roles?: string[]; 
     
 }
 

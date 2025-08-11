@@ -521,7 +521,7 @@ export const WorkspaceDialogComponent = observer(() => {
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-                    <AnchorButton intent={Intent.DANGER} icon="trash" onClick={handleDeleteClicked} text="Delete" disabled={isFetching || !selectedWorkspace} />
+                    <AnchorButton intent={Intent.DANGER} icon="trash" onClick={handleDeleteClicked} text="Delete" disabled={isFetching || !selectedWorkspace  || !appStore.activeWorkspace?.editable } />
                     {mode === WorkspaceDialogMode.Save && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleSaveClicked} text="Save" disabled={isFetching || !workspaceName} />
                     )}

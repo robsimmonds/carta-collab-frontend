@@ -280,10 +280,10 @@ export class RootMenuComponent extends React.Component {
                     <MenuItem text="Create" icon="new-object" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, { mode: WorkspaceDialogMode.Create})} />
                     <MenuItem text="Open" icon="document" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.Workspace, {mode: WorkspaceDialogMode.Open})} />
                     {appStore.activeWorkspace && (
-                        <MenuItem text="Save" icon="floppy-disk" disabled={appStore.openWorkspaceDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.SaveWorkspace)} />
+                        <MenuItem text="Save" icon="floppy-disk" disabled={appStore.openWorkspaceDisabled  || !appStore.activeWorkspace.editable} onClick={() => appStore.dialogStore.showDialog(DialogId.SaveWorkspace)} />
                     )}
                     {appStore.activeWorkspace && (
-                        <MenuItem text="Clone" icon="duplicate" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.CloneWorkspace)} />
+                        <MenuItem text="Clone" icon="duplicate" disabled={appStore.openFileDisabled  || !appStore.activeWorkspace.editable} onClick={() => appStore.dialogStore.showDialog(DialogId.CloneWorkspace)} />
                     )}
                     {appStore.activeWorkspace && (
                         <MenuItem text="Branch" icon="git-branch" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.BranchWorkspace)} />

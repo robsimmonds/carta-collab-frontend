@@ -730,4 +730,15 @@ export class ApiService {
         }
         return [];
     };
+
+    public changeUserRole = async (workspaceId: string, username: string, role: "editor" | "viewer") => {
+    if (ApiService.RuntimeConfig.apiAddress) {
+        try {
+            const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/changeUserRole`;
+            await this.axiosInstance.put(url, { username, role });
+        } catch (err) {
+            console.log(err);
+        }
+    }
+    };
 }

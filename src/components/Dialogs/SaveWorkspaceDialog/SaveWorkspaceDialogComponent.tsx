@@ -76,7 +76,7 @@ export const SaveWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleSave} disabled={!workspace}>Save</Button>
+                    <Button intent="primary" onClick={handleSave} disabled={!workspace || !workspace.editable}>Save</Button>
                 </div>
             </div>
         </Dialog>

@@ -125,7 +125,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleBranch} disabled={!workspace || !branchName.trim()}>Branch</Button>
+                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Branch</Button>
                 </div>
             </div>
         </Dialog>

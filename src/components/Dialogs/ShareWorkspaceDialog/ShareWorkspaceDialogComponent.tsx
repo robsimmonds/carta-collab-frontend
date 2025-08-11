@@ -1,5 +1,5 @@
 import {ReactNode, useEffect, useState} from "react";
-import {AnchorButton, Checkbox, Classes, Dialog, DialogProps, InputGroup, Intent, Tooltip} from "@blueprintjs/core";
+import {AnchorButton, Checkbox, Classes, Dialog, DialogProps, InputGroup, Intent, Tag,Tooltip} from "@blueprintjs/core";
 import {observer} from "mobx-react";
 
 import {AppStore, DialogId} from "stores";
@@ -17,6 +17,8 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     const appStore = AppStore.Instance;
     const [role, setRole] = useState<"editor" | "viewer">("viewer");
 
+    
+
     // Reset the dialog when the active workspace changes
     let shareWorkspaceDialogVisible = appStore.dialogStore.dialogVisible.get(DialogId.ShareWorkspace);
     useEffect(() => {
@@ -27,6 +29,9 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     }, [appStore.activeWorkspace, shareWorkspaceDialogVisible]);
 
     const {activeWorkspace} = appStore;
+
+    const userList = Array.isArray(activeWorkspace?.users) ? activeWorkspace.users : [];
+    const roleList = Array.isArray(activeWorkspace?.roles) ? activeWorkspace.roles : [];
 
     const dialogProps: DialogProps = {
         icon: "share",
@@ -51,6 +56,7 @@ export const ShareWorkspaceDialogComponent = observer(() => {
             // Instead, just call the share logic (e.g., add user to workspace)
             await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith, role);
             AppToaster.show({ message: `Workspace shared with ${shareWith} as ${role}`, intent: Intent.SUCCESS });
+
         } catch (err) {
             console.log(err);
             AppToaster.show(WarningToast("Could not share workspace."));
@@ -96,18 +102,19 @@ export const ShareWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_BODY}>
                 <p>
                     This workspace will be marked as shared. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
-                    to adjust file permissions.
+                    to adjust file permissions. 
                 </p>
-                {activeWorkspace?.users && activeWorkspace.users.length > 0 && (
-                    <div style={{ marginBottom: 10 }}>
-                        <b>Currently shared with:</b>
-                        <ul>
-                            {activeWorkspace.users.map(user => (
-                                <li key={user}>{user}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                {/* Show current users and roles */}
+                <div style={{ marginBottom: 12 }}>  
+                    <b>Current users:</b>
+                        {userList.length === 0 && <span>No users added yet.</span>}
+                        {userList.map((username, idx) => (
+                            <Tag key={idx} style={{ margin: "2px 4px 2px 0" }}>
+                                {username} <span style={{ fontStyle: "italic", marginLeft: 4 }}>({roleList[idx] ?? "unknown"})</span>
+                            </Tag>
+                        ))}
+                </div>
+                
                 <InputGroup
                     placeholder="Enter username to share with"
                     value={shareWith}

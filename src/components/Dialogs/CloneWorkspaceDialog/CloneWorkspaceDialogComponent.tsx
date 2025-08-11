@@ -38,7 +38,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleClone} disabled={!workspace}>Clone</Button>
+                    <Button intent="primary" onClick={handleClone} disabled={!workspace || !workspace.editable}>Clone</Button>
                 </div>
             </div>
         </Dialog>
