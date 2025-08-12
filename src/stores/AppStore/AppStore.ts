@@ -2701,14 +2701,17 @@ export class AppStore {
     
     @flow.bound
     public *createWorkspace(name: string) {
-        const workspace: Workspace = {
-            workspaceVersion: 0,
-            frontendVersion: CARTA_INFO.version,
-            description: "Workspace exported from CARTA",
-            files: [],
-            references: {},
-            date: Date.now() / 1000
-        };
+        this.loadingWorkspace = true;
+        
+        try {
+            const workspace: Workspace = {
+                workspaceVersion: 0,
+                frontendVersion: CARTA_INFO.version,
+                description: "Workspace exported from CARTA",
+                files: [],
+                references: {},
+                date: Date.now() / 1000
+            };
 
 	const thumbnail = yield exportScreenshot();
         if (thumbnail) {
@@ -2822,10 +2825,16 @@ export class AppStore {
         const createWorkspace = yield this.apiService.createWorkspace(name, workspace);
         if (createWorkspace) {
             this.activeWorkspace = createWorkspace;
+            this.loadingWorkspace = false;
             return true;
         }
+        this.loadingWorkspace = false;
         return false;
-
+        } catch (error) {
+            this.loadingWorkspace = false;
+            console.error("Error creating workspace:", error);
+            return false;
+        }
     }
 
     @flow.bound

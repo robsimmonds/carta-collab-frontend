@@ -124,7 +124,9 @@ export interface Workspace {
     thumbnail?: string;
     date?: number;
     users?: string[];
+    user?: string; // Current user's username 
     roles?: string[]; 
+    role?: string; // Current user's role in the workspace
     
 }
 

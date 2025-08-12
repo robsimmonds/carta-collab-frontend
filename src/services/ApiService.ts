@@ -547,10 +547,19 @@ export class ApiService {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/createWorkspace`;
                 const res = await this.axiosInstance.put(url, {workspaceName, workspace});
-                if (res.data?.workspace?.id) {
-                    workspace.id = res.data?.workspace?.id;
+                if (res.data?.success && res.data?.workspace) {
+                    return {
+                        ...workspace,
+                        id: res.data.workspace.id,
+                        editable: res.data.workspace.editable,
+                        name: res.data.workspace.name,
+                        users: res.data.workspace.users,
+                        user: res.data.workspace.user,
+                        role: res.data.workspace.role,
+                        roles: res.data.workspace.roles
+                    };
                 }
-                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                return undefined;
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -575,7 +584,16 @@ export class ApiService {
                 if (res.data?.workspace?.id) {
                     workspace.id = res.data?.workspace?.id;
                 }
-                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                return {
+                ...workspace,
+                id: res.data.workspace.id,
+                editable: res.data.workspace.editable,
+                name: res.data.workspace.name,
+                users: res.data.workspace.users ?? [],
+                user: res.data.workspace.user,
+                role: res.data.workspace.role,
+                roles: res.data.workspace.roles
+            };
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -598,8 +616,21 @@ export class ApiService {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
                 const res = await this.axiosInstance.put(url, {workspaceName});
               	
-                return {...res.data?.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                //return {...res.data?.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
                 //return res?.data?.success;
+                if (res.data?.success && res.data?.workspace) {
+                    return {
+                        ...res.data?.workspace,
+                        id: res.data.workspace.id,
+                        editable: res.data.workspace.editable,
+                        name: res.data.workspace.name,
+                        users: res.data.workspace.users,
+                        user: res.data.workspace.user,
+                        role: res.data.workspace.role,
+                        roles: res.data.workspace.roles
+                    };
+                }
+                return undefined;
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -731,14 +762,17 @@ export class ApiService {
         return [];
     };
 
-    public changeUserRole = async (workspaceId: string, username: string, role: "editor" | "viewer") => {
-    if (ApiService.RuntimeConfig.apiAddress) {
-        try {
-            const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/changeUserRole`;
-            await this.axiosInstance.put(url, { username, role });
-        } catch (err) {
-            console.log(err);
+    public changeUserRole = async (workspaceId: string, username: string, role: "editor" | "viewer"): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/changeUserRole`;
+                const response = await this.axiosInstance.put(url, { username, role });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
         }
-    }
+        return false;
     };
 }

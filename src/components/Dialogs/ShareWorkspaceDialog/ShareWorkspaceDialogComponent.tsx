@@ -1,5 +1,5 @@
 import {ReactNode, useEffect, useState} from "react";
-import {AnchorButton, Checkbox, Classes, Dialog, DialogProps, InputGroup, Intent, Tag,Tooltip} from "@blueprintjs/core";
+import {AnchorButton, Checkbox, Classes, Dialog, DialogProps, InputGroup, Intent, Menu, MenuItem,Tag,Tooltip} from "@blueprintjs/core";
 import {observer} from "mobx-react";
 
 import {AppStore, DialogId} from "stores";
@@ -33,6 +33,10 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     const userList = Array.isArray(activeWorkspace?.users) ? activeWorkspace.users : [];
     const roleList = Array.isArray(activeWorkspace?.roles) ? activeWorkspace.roles : [];
 
+    // Determine if current user is owner
+    const isOwner = activeWorkspace?.role.toLowerCase() === "owner";
+    const u_name = activeWorkspace?.user;
+
     const dialogProps: DialogProps = {
         icon: "share",
         className: "share-workspace-dialog",
@@ -60,6 +64,32 @@ export const ShareWorkspaceDialogComponent = observer(() => {
         } catch (err) {
             console.log(err);
             AppToaster.show(WarningToast("Could not share workspace."));
+        }
+    };
+
+    // Handler to change a user's role (calls backend)
+    const handleChangeRole = async (username: string, newRole: "editor" | "viewer") => {
+        AppToaster.show({ message: `Changing role for ${username} to ${newRole}`, intent: Intent.SUCCESS });
+        console.log(`Changing role for ${username} to ${newRole}`);
+        if (!activeWorkspace?.id) return;
+        try {
+            const success = await appStore.apiService.changeUserRole(activeWorkspace.id, username, newRole);
+            if (success) {
+                AppToaster.show({ message: `User ${username} role changed to ${newRole}`, intent: Intent.SUCCESS });
+                // Refresh the workspace data by fetching it again
+                if (activeWorkspace.name) {
+                    const refreshedWorkspace = await appStore.apiService.getWorkspace(activeWorkspace.name);
+                    if (refreshedWorkspace) {
+                        // Update the active workspace with the new data
+                        appStore.activeWorkspace = {...appStore.activeWorkspace, ...refreshedWorkspace};
+                    }
+                }
+            } else {
+                AppToaster.show(WarningToast(`Failed to change ${username}'s role`));
+            }
+        } catch (err) {
+            console.log(err);
+            AppToaster.show(WarningToast(`Failed to change ${username}'s role`));
         }
     };
 
@@ -104,16 +134,44 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     This workspace will be marked as shared. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
                     to adjust file permissions. 
                 </p>
+                <div>
+                    <pre>
+                        {JSON.stringify({userList, roleList, username: u_name, isOwner}, null, 2)}
+                    </pre>
+                </div>
                 {/* Show current users and roles */}
                 <div style={{ marginBottom: 12 }}>  
                     <b>Current users:</b>
-                        {userList.length === 0 && <span>No users added yet.</span>}
-                        {userList.map((username, idx) => (
-                            <Tag key={idx} style={{ margin: "2px 4px 2px 0" }}>
-                                {username} <span style={{ fontStyle: "italic", marginLeft: 4 }}>({roleList[idx] ?? "unknown"})</span>
+                    {userList.length === 0 && <span>No users added yet.</span>}
+                    {userList.map((username, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", margin: "2px 0" }}>
+                            <Tag style={{ marginRight: 8 }}>
+                                {username}
+                                <span style={{ fontStyle: "italic", marginLeft: 4 }}>
+                                    ({roleList[idx] ?? "unknown"})
+                                </span>
                             </Tag>
-                        ))}
+                            {/* Use MenuButton instead of Popover/cog */}
+                            {isOwner && username !== u_name && (
+                                <Menu>
+                                    <MenuItem
+                                        text="Change to Editor"
+                                        icon="edit"
+                                        onClick={() => handleChangeRole(username, "editor")}
+                                        disabled={roleList[idx] === "editor"}
+                                    />
+                                    <MenuItem
+                                        text="Change to Viewer"
+                                        icon="eye-open"
+                                        onClick={() => handleChangeRole(username, "viewer")}
+                                        disabled={roleList[idx] === "viewer"}
+                                    />
+                                </Menu>
+                            )}
+                        </div>
+                    ))}
                 </div>
+                
                 
                 <InputGroup
                     placeholder="Enter username to share with"
