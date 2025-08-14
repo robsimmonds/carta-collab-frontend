@@ -9,6 +9,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
     const dialogStore = DialogStore.Instance;
     const isOpen = dialogStore.dialogVisible.get(DialogId.CloneWorkspace);
     const workspace = appStore.activeWorkspace;
+    const currentBranch = appStore.currentWorkspaceBranch || "master"; 
 
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.CloneWorkspace);
@@ -16,7 +17,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
 
     const handleClone = async () => {
         if (workspace) {
-            await appStore.cloneWorkspace(workspace.name);
+            await appStore.cloneWorkspace(workspace.name, currentBranch);
         }
         handleClose();
     };

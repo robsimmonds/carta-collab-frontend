@@ -2972,8 +2972,8 @@ export class AppStore {
     }
 
     @flow.bound
-    public *cloneWorkspace(name: string) {
-	    const cloneWorkspace = yield this.apiService.cloneWorkspace(name);
+    public *cloneWorkspace(name: string, branchName: string) {
+	    const cloneWorkspace = yield this.apiService.cloneWorkspace(name, branchName);
         if (cloneWorkspace) {
             this.activeWorkspace = cloneWorkspace;
             return true;
@@ -3697,7 +3697,7 @@ export class AppStore {
         //AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} from branch ${prevBranch} in workspace ${name}.`));
         const success = await this.apiService.switchWorkspaceBranch(name, newBranch, prevBranch);
         if (success) {
-            this.setCurrentWorkspaceBranch(newBranch);
+            this.setCurrentWorkspaceBranch(newBranch.replace(/^[^ ]* /, ''));
             
             AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} in workspace ${name}.`));
             // Reload the workspace to reflect the new branch

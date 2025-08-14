@@ -139,7 +139,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
         try {
             // Calls a new store method that creates db and inits git
-            const res = await appStore.cloneWorkspace(name);
+            const res = await appStore.cloneWorkspace(name, branchName);
             if (res) {
                 AppToaster.show(SuccessToast("floppy-disk", "Workspace cloned"));
                 handleCloseClicked();

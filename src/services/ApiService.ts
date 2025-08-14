@@ -610,11 +610,11 @@ export class ApiService {
         }
     };
 
-    public cloneWorkspace = async (workspaceName: string): Promise<Workspace | undefined> => {
+    public cloneWorkspace = async (workspaceName: string, branchName: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName});
+                const res = await this.axiosInstance.put(url, {workspaceName, branchName});
               	
                 //return {...res.data?.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
                 //return res?.data?.success;
