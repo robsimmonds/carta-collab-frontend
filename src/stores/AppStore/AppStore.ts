@@ -2548,7 +2548,7 @@ export class AppStore {
         this.loadingWorkspace = true;
 
         try {
-            const workspace: Workspace = yield this.apiService.getWorkspace(name,this.currentWorkspaceBranch, isKey);
+            const workspace: Workspace = yield this.apiService.getWorkspace(name, isKey);
             if (!workspace) {
                 this.loadingWorkspace = false;
                 AppToaster.show({icon: "warning-sign", message: `Could not load workspace "${name}"`, intent: "danger", timeout: 3000});
@@ -3695,7 +3695,7 @@ export class AppStore {
     // Switch to a branch in a workspace
     public async switchWorkspaceBranch(name: string, newBranch: string,prevBranch: string): Promise<boolean> {
         //AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} from branch ${prevBranch} in workspace ${name}.`));
-        const success = await this.apiService.switchWorkspaceBranch(name, newBranch, prevBranch);
+        const success = await this.apiService.switchWorkspaceBranch(name, newBranch.replace(/^[^a-zA-Z0-9]+/, '').trim(), prevBranch.replace(/^[^a-zA-Z0-9]+/, '').trim());
         if (success) {
             this.setCurrentWorkspaceBranch(newBranch.replace(/^[^ ]* /, ''));
             

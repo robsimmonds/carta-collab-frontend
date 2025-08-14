@@ -231,15 +231,7 @@ export const WorkspaceDialogComponent = observer(() => {
         if (!workspaceName || !workspaceList.find(item => item.name === workspaceName)) {
             return;
         }
-        // If a branch is selected and it's not the current branch, switch first
-        if (selectedWorkspace && selectedBranch && selectedBranch !== currentBranch) {
-            await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch, currentBranch);
-            // Refresh branch info after switching
-            const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
-            setBranches(branchInfo?.branches || []);
-            setCurrentBranch(branchInfo?.current || "");
-            setSelectedBranch(branchInfo?.current || "");
-        }
+        
         openWorkspace(workspaceName);
     };
 
@@ -455,27 +447,7 @@ export const WorkspaceDialogComponent = observer(() => {
                         )}
                     </div>
                 )}
-                {mode === WorkspaceDialogMode.Open && selectedWorkspace && (
-                    <div style={{ margin: "8px 0" }}>
-                        <label>Open Branch:</label>
-                        <select
-                            value={selectedBranch}
-                            onChange={e => setSelectedBranch(e.target.value)}
-                            style={{ marginLeft: 8, minWidth: 120 }}
-                        >
-                            {branches.map(branch => (
-                                <option key={branch} value={branch}>
-                                    {branch}
-                                </option>
-                            ))}
-                        </select>
-                        {currentBranch && (
-                            <span style={{ marginLeft: 16, fontStyle: "italic" }}>
-                                Current: {currentBranch}
-                            </span>
-                        )}
-                    </div>
-                )}
+                
                 {mode === WorkspaceDialogMode.Branch && (
                     <FormGroup label="Branch Name" labelFor="branch-name-input">
                         <InputGroup
