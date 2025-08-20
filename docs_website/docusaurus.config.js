@@ -63,7 +63,7 @@ const config = {
             ({
                 docs: {
                     versions: {
-                        "5.0.0-beta.1c": {
+                        "5.0.0": {
                             banner: "none",
                         }
                     },
