@@ -269,6 +269,7 @@ export const WorkspaceDialogComponent = observer(() => {
         setSelectedWorkspace(entry);
 
         if (entry.name) {
+            // the listing issue????
             const branchInfo = await appStore.listWorkspaceBranches(entry.name);
             setBranches(branchInfo?.branches || []);
             setCurrentBranch(branchInfo?.current || "");

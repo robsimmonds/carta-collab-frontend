@@ -226,6 +226,10 @@ export class AppStore {
         this.showNewRelease = true;
     };
 
+    @action setActiveWorkspace = (workspace: Workspace) => {
+        this.activeWorkspace = workspace;
+    }
+
     private connectToServer = async () => {
         // Remove query parameters and replace protocol
         let wsURL = window.location.href.replace(window.location.search, "").replace(/^http/, "ws");
@@ -2548,7 +2552,7 @@ export class AppStore {
         this.loadingWorkspace = true;
 
         try {
-            const workspace: Workspace = yield this.apiService.getWorkspace(name, isKey);
+            const workspace: Workspace = yield this.apiService.getWorkspace(name, isKey, this.currentWorkspaceBranch);
             if (!workspace) {
                 this.loadingWorkspace = false;
                 AppToaster.show({icon: "warning-sign", message: `Could not load workspace "${name}"`, intent: "danger", timeout: 3000});
@@ -2689,7 +2693,8 @@ export class AppStore {
             }
 
             this.loadingWorkspace = false;
-            this.activeWorkspace = workspace;
+            //this.activeWorkspace = workspace;
+            this.setActiveWorkspace(workspace); //is this neccesary, didnt really help. Perhaps perhaps smth to do with frames and all. (action etc etc)
             return true;
         } catch (err) {
             console.error(err);
@@ -2963,7 +2968,9 @@ export class AppStore {
         if (this.activeFrame) {
             workspace.selectedFile = this.activeFrameFileId;
         }
-        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage, branchName);
+        // Default to current branch if branchName not provided
+        const targetBranch = branchName && branchName.trim().length > 0 ? branchName : this.currentWorkspaceBranch || "master";
+        const savedWorkspace = yield this.apiService.setWorkspace(name, workspace, commitMessage, targetBranch);
         if (savedWorkspace) {
             this.activeWorkspace = savedWorkspace;
             return true;
@@ -3702,6 +3709,7 @@ export class AppStore {
             AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} in workspace ${name}.`));
             // Reload the workspace to reflect the new branch
             await this.loadWorkspace(name);
+            
         } else {
             AlertStore.Instance.showAlert(`Switching branch to ${newBranch} in workspace ${name} failed!`);
         }

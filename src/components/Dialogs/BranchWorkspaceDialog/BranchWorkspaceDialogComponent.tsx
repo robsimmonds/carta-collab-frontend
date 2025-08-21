@@ -44,7 +44,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch, currentBranch);
         if (success) {
             setCurrentBranch(branchToSwitch); // update current branch
-            appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
+            //appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
             // Refresh branch info after switching
             const branchInfo = await appStore.listWorkspaceBranches(workspace.name, branchToSwitch);
             setBranches(branchInfo?.branches || []);

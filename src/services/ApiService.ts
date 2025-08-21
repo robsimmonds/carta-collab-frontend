@@ -506,10 +506,14 @@ export class ApiService {
         }
     };
 
-    public getWorkspace = async (name: string,isKey = false): Promise<Workspace | undefined> => {
+    public getWorkspace = async (name: string,isKey = false, branchName = "master"): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 let url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${isKey ? "key/" : ""}${name}`;
+                
+                if (branchName && branchName !== "master") {
+                    url += `?branchName=${encodeURIComponent(branchName)}`;
+         }
 
                 const response = await this.axiosInstance.get<{workspace: Workspace; success: boolean}>(url);
                 if (response?.data?.success) {
