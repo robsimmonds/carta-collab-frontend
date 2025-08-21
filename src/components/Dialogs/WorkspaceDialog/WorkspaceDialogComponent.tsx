@@ -195,6 +195,18 @@ export const WorkspaceDialogComponent = observer(() => {
 
             setIsFetching(true);
             try {
+                //appStore.setCurrentWorkspaceBranch("master"); // Reset to master branch on open
+
+                if (appStore.currentWorkspaceBranch !== "master") {
+                    await appStore.switchWorkspaceBranch(name, "master", appStore.currentWorkspaceBranch);
+                }
+
+                // Update branch info after switching
+                const branchInfo = await appStore.listWorkspaceBranches(name);
+                setBranches(branchInfo?.branches || []);
+                setCurrentBranch(branchInfo?.current || "");
+                setSelectedBranch(branchInfo?.current || "");
+
                 const res = await appStore.loadWorkspace(name);
                 if (res) {
                     AppToaster.show(SuccessToast("floppy-disk", "Workspace loaded"));
