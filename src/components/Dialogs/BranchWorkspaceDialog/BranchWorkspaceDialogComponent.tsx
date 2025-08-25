@@ -87,7 +87,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                     {branch}
                                     {branch === currentBranch && " (current)"}
                                 </span>
-                                {branch !== currentBranch && (
+                                {branch !== currentBranch && branch.replace(/^[^ ]* /, '') !== "master" && (
                                     <Tooltip content="Delete branch">
                                         <Button
                                             icon="trash"
