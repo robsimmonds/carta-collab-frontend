@@ -775,4 +775,19 @@ export class ApiService {
         }
         return false;
     };
+
+    public removeUserFromWorkspace = async (workspaceId: string, username: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/removeUser`;
+                const response = await this.axiosInstance.put(url, { username });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
 }

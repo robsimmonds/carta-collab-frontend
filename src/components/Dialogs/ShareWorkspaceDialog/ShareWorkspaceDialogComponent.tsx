@@ -93,6 +93,28 @@ export const ShareWorkspaceDialogComponent = observer(() => {
         }
     };
 
+    const handleRemoveUser = async (username: string) => {
+        if (!activeWorkspace?.id) return;
+        try {
+            const success = await appStore.apiService.removeUserFromWorkspace(activeWorkspace.id, username);
+            if (success) {
+                AppToaster.show({ message: `User ${username} removed`, intent: Intent.SUCCESS });
+                // Refresh workspace data
+                if (activeWorkspace.name) {
+                    const refreshedWorkspace = await appStore.apiService.getWorkspace(activeWorkspace.name);
+                    if (refreshedWorkspace) {
+                        appStore.activeWorkspace = { ...appStore.activeWorkspace, ...refreshedWorkspace };
+                    }
+                }
+            } else {
+                AppToaster.show(WarningToast(`Failed to remove ${username}`));
+            }
+        } catch (err) {
+            console.log(err);
+            AppToaster.show(WarningToast(`Failed to remove ${username}`));
+        }
+    };
+
     let footer: ReactNode;
 
     // Remove shareKey logic from footer
@@ -153,20 +175,30 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                             </Tag>
                             {/* Use MenuButton instead of Popover/cog */}
                             {isOwner && username !== u_name && (
-                                <Menu>
-                                    <MenuItem
-                                        text="Change to Editor"
-                                        icon="edit"
-                                        onClick={() => handleChangeRole(username, "editor")}
-                                        disabled={roleList[idx] === "editor"}
+                                <>
+                                    <Menu>
+                                        <MenuItem
+                                            text="Change to Editor"
+                                            icon="edit"
+                                            onClick={() => handleChangeRole(username, "editor")}
+                                            disabled={roleList[idx] === "editor"}
+                                        />
+                                        <MenuItem
+                                            text="Change to Viewer"
+                                            icon="eye-open"
+                                            onClick={() => handleChangeRole(username, "viewer")}
+                                            disabled={roleList[idx] === "viewer"}
+                                        />
+                                    </Menu>
+                                    <AnchorButton
+                                        icon="delete"
+                                        intent={Intent.DANGER}
+                                        minimal
+                                        style={{ marginLeft: 8 }}
+                                        onClick={() => handleRemoveUser(username)}
+                                        title="Remove user"
                                     />
-                                    <MenuItem
-                                        text="Change to Viewer"
-                                        icon="eye-open"
-                                        onClick={() => handleChangeRole(username, "viewer")}
-                                        disabled={roleList[idx] === "viewer"}
-                                    />
-                                </Menu>
+                                </>
                             )}
                         </div>
                     ))}
