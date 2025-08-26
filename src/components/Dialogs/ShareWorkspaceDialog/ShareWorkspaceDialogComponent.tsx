@@ -16,7 +16,6 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     const [shareWith, setShareWith] = useState<string>("");
     const appStore = AppStore.Instance;
     const [role, setRole] = useState<"editor" | "viewer">("viewer");
-
     
 
     // Reset the dialog when the active workspace changes
@@ -36,6 +35,10 @@ export const ShareWorkspaceDialogComponent = observer(() => {
     // Determine if current user is owner
     const isOwner = activeWorkspace?.role.toLowerCase() === "owner";
     const u_name = activeWorkspace?.user;
+
+    // Only allow sharing if user is owner or editor
+    const canShare = activeWorkspace?.role && ["owner", "editor"].includes(activeWorkspace.role.toLowerCase());
+
 
     const dialogProps: DialogProps = {
         icon: "share",
@@ -61,6 +64,14 @@ export const ShareWorkspaceDialogComponent = observer(() => {
             await appStore.apiService.getSharedWorkspaceKey(activeWorkspace.id, shareWith, role);
             AppToaster.show({ message: `Workspace shared with ${shareWith} as ${role}`, intent: Intent.SUCCESS });
 
+            // Refresh the workspace data so the UI updates immediately
+            if (activeWorkspace.name) {
+                const refreshedWorkspace = await appStore.apiService.getWorkspace(activeWorkspace.name);
+                if (refreshedWorkspace) {
+                    appStore.activeWorkspace = { ...appStore.activeWorkspace, ...refreshedWorkspace };
+                }
+            }
+            setShareWith(""); // Clear input after sharing
         } catch (err) {
             console.log(err);
             AppToaster.show(WarningToast("Could not share workspace."));
@@ -144,7 +155,9 @@ export const ShareWorkspaceDialogComponent = observer(() => {
             ) : (
                 saveCheckbox
             )}
-            <AnchorButton intent={Intent.PRIMARY} text="Share" onClick={handleGenerateClicked} />
+            {canShare && (
+                <AnchorButton intent={Intent.PRIMARY} text="Share" onClick={handleGenerateClicked} />
+            )}
         </>
     );
     // }
@@ -156,11 +169,11 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     This workspace will be marked as shared. Please note that this does not automatically grant other users access to files in the workplace. Please contact your system administrator
                     to adjust file permissions. 
                 </p>
-                <div>
-                    <pre>
+                 {/*<div>
+                   <pre>
                         {JSON.stringify({userList, roleList, username: u_name, isOwner}, null, 2)}
                     </pre>
-                </div>
+                </div>*/} 
                 {/* Show current users and roles */}
                 <div style={{ marginBottom: 12 }}>  
                     <b>Current users:</b>
@@ -210,10 +223,11 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                     value={shareWith}
                     onChange={e => setShareWith(e.target.value)}
                     className="share-username-input"
+                    disabled={!canShare}
                 />
                 <div style={{ margin: "10px 0" }}>
                     <label style={{ marginRight: 8 }}>Role:</label>
-                    <select value={role} onChange={e => setRole(e.target.value as "editor" | "viewer")}>
+                    <select value={role} onChange={e => setRole(e.target.value as "editor" | "viewer")} disabled={!canShare}>
                         <option value="editor">Editor</option>
                         <option value="viewer">Viewer</option>
                     </select>
