@@ -17,9 +17,11 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     useEffect(() => {
         async function fetchBranches() {
             if (workspace) {
-                const branchInfo = await appStore.listWorkspaceBranches(workspace.name,currentBranch || "master");
+                const branchInfo = await appStore.listWorkspaceBranches(workspace.name,appStore.currentWorkspaceBranch|| "master");
                 setBranches(branchInfo?.branches || []);
-                setCurrentBranch(branchInfo?.current || (currentBranch || "master"));
+                if (branchInfo?.current && branchInfo.current !== appStore.currentWorkspaceBranch) {
+                    appStore.setCurrentWorkspaceBranch(branchInfo.current);
+                }
             }
         }
         if (isOpen && workspace?.name) {
@@ -40,8 +42,8 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     };
 
     const handleSwitchBranch = async (branchToSwitch: string) => {
-        if (!workspace || !branchToSwitch || branchToSwitch === currentBranch) return;
-        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch, currentBranch);
+        if (!workspace || !branchToSwitch || branchToSwitch === appStore.currentWorkspaceBranch) return;
+        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch,appStore.currentWorkspaceBranch);
         if (success) {
             setCurrentBranch(branchToSwitch); // update current branch
             //appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
@@ -79,15 +81,15 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                             <div key={branch} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
                                 <span
                                     style={{
-                                        fontWeight: branch === currentBranch ? "bold" : "normal",
-                                        color: branch === currentBranch ? "#137cbd" : undefined,
+                                        fontWeight: branch === appStore.currentWorkspaceBranch? "bold" : "normal",
+                                        color: branch === appStore.currentWorkspaceBranch? "#137cbd" : undefined,
                                         flex: 1,
                                     }}
                                 >
                                     {branch}
-                                    {branch === currentBranch && " (current)"}
+                                    {branch === appStore.currentWorkspaceBranch && " (current)"}
                                 </span>
-                                {branch !== currentBranch && branch.replace(/^[^ ]* /, '') !== "master" && (
+                                {branch !== appStore.currentWorkspaceBranch && branch.replace(/^[^ ]* /, '') !== "master" && (
                                     <Tooltip content="Delete branch">
                                         <Button
                                             icon="trash"
@@ -106,7 +108,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                         />
                                     </Tooltip>
                                 )}
-                                {branch !== currentBranch && (
+                                {branch !== appStore.currentWorkspaceBranch && (
                                     <Button
                                         style={{ marginLeft: 8 }}
                                         intent="primary"

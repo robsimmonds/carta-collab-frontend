@@ -127,6 +127,7 @@ export interface Workspace {
     user?: string; // Current user's username 
     roles?: string[]; 
     role?: string; // Current user's role in the workspace
+    branch?: string; // Current user's branch in the workspace
     
 }
 

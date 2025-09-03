@@ -2559,6 +2559,11 @@ export class AppStore {
                 return false;
             }
 
+            // If backend returns branch info, update frontend state
+            if (workspace.branch) {
+                this.setCurrentWorkspaceBranch(workspace.branch);
+            }
+
             // Some things should be reset when the user reconnects
             this.animatorStore.stopAnimation();
             this.tileService.clearRequestQueue();

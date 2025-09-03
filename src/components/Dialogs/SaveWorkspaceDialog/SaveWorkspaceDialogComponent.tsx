@@ -12,12 +12,12 @@ export const SaveWorkspaceDialogComponent = observer(() => {
     const isOpen = dialogStore.dialogVisible.get(DialogId.SaveWorkspace);
     const workspace = appStore.activeWorkspace;
     //const [currentBranch, setCurrentBranch] = useState<string>(appStore.currentWorkspaceBranch || "master");
-    const currentBranch = appStore.currentWorkspaceBranch || "master";
+    //const currentBranch = appStore.currentWorkspaceBranch || "master";
 
     useEffect(() => {
         async function fetchBranch() {
             if (workspace?.name) {
-                const branchInfo = await appStore.listWorkspaceBranches(workspace.name, currentBranch);
+                const branchInfo = await appStore.listWorkspaceBranches(workspace.name, appStore.currentWorkspaceBranch);
                 //setCurrentBranch(branchInfo?.current || currentBranch );
                 // Update the global branch if backend returns something different:
                 if (branchInfo?.current && branchInfo.current !== appStore.currentWorkspaceBranch) {
@@ -28,7 +28,7 @@ export const SaveWorkspaceDialogComponent = observer(() => {
         if (isOpen && workspace?.name) {
             fetchBranch();
         }
-    }, [isOpen, workspace?.name, appStore, currentBranch]);
+    }, [isOpen, workspace?.name, appStore]);
 
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.SaveWorkspace);
