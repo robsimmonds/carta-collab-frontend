@@ -38,7 +38,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         if (workspace && branchName.trim()) {
             await appStore.branchWorkspace(workspace.name, branchName.trim());
         }
-        handleClose();
+        //handleClose();
     };
 
     const handleSwitchBranch = async (branchToSwitch: string) => {
@@ -58,7 +58,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title="Branch Workspace"
+            title="Experiment Management"
             canEscapeKeyClose
             canOutsideClickClose
             className={Classes.DIALOG}
@@ -67,15 +67,15 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                 <FormGroup label="Workspace Name">
                     <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
-                <FormGroup label="Branch Name" helperText="Enter a name for the new branch.">
+                <FormGroup label="Experiment Name" helperText="Enter a name for the new experiment.">
                     <InputGroup
                         value={branchName}
                         onChange={e => setBranchName(e.currentTarget.value)}
-                        placeholder="Branch name"
+                        placeholder="Experiment name"
                         autoFocus
                     />
                 </FormGroup>
-                <FormGroup label="Branches">
+                <FormGroup label="Experiments" helperText="Switch between experiments or delete an experiment (except 'main').">
                     <div>
                         {branches.map(branch => (
                             <div key={branch} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
@@ -97,7 +97,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                             intent="danger"
                                             style={{ marginLeft: 8 }}
                                             onClick={async () => {
-                                                if (window.confirm(`Delete branch "${branch}"? This cannot be undone.`)) {
+                                                if (window.confirm(`Delete Experiment "${branch}"? This cannot be undone.`)) {
                                                     await appStore.deleteWorkspaceBranch(workspace.name, branch);
                                                     // Refresh branch list
                                                     const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
@@ -127,7 +127,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Branch</Button>
+                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Experiment</Button>
                 </div>
             </div>
         </Dialog>

@@ -186,32 +186,37 @@ export const ShareWorkspaceDialogComponent = observer(() => {
                                     ({roleList[idx] ?? "unknown"})
                                 </span>
                             </Tag>
-                            {/* Use MenuButton instead of Popover/cog */}
                             {isOwner && username !== u_name && (
-                                <>
-                                    <Menu>
-                                        <MenuItem
-                                            text="Change to Editor"
-                                            icon="edit"
-                                            onClick={() => handleChangeRole(username, "editor")}
-                                            disabled={roleList[idx] === "editor"}
-                                        />
-                                        <MenuItem
-                                            text="Change to Viewer"
-                                            icon="eye-open"
-                                            onClick={() => handleChangeRole(username, "viewer")}
-                                            disabled={roleList[idx] === "viewer"}
-                                        />
-                                    </Menu>
-                                    <AnchorButton
-                                        icon="delete"
-                                        intent={Intent.DANGER}
-                                        minimal
-                                        style={{ marginLeft: 8 }}
-                                        onClick={() => handleRemoveUser(username)}
-                                        title="Remove user"
+                                <Menu>
+                                    <MenuItem
+                                        text="Actions"
+                                        icon="cog"
+                                        popoverProps={{ position: "bottom" }}
+                                        children={[
+                                            <MenuItem
+                                                key="editor"
+                                                text="Change to Editor"
+                                                icon="edit"
+                                                onClick={() => handleChangeRole(username, "editor")}
+                                                disabled={roleList[idx] === "editor"}
+                                            />,
+                                            <MenuItem
+                                                key="viewer"
+                                                text="Change to Viewer"
+                                                icon="eye-open"
+                                                onClick={() => handleChangeRole(username, "viewer")}
+                                                disabled={roleList[idx] === "viewer"}
+                                            />,
+                                            <MenuItem
+                                                key="delete"
+                                                text="Remove user"
+                                                icon="delete"
+                                                intent={Intent.DANGER}
+                                                onClick={() => handleRemoveUser(username)}
+                                            />
+                                        ]}
                                     />
-                                </>
+                                </Menu>
                             )}
                         </div>
                     ))}
