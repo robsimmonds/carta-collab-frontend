@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, Dialog,DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, Dialog,DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner, Tab,Tabs} from "@blueprintjs/core";
 import {Cell, Column, Region, RenderMode, SelectionModes, Table2, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -36,9 +36,11 @@ export const WorkspaceDialogComponent = observer(() => {
     const [selectedBranch, setSelectedBranch] = useState<string>("");
     const [currentBranch, setCurrentBranch] = useState<string>("");
     const [branchName, setBranchName] = useState("");
-    const [branchGraph, setBranchGraph] = useState<any[]>([]);
-    const [showGraph, setShowGraph] = useState(false);
+    //const [branchGraph, setBranchGraph] = useState<any[]>([]);
+    //const [showGraph, setShowGraph] = useState(false);
     const [selectedCommit, setSelectedCommit] = useState<any | null>(null);
+
+    const [activeTab, setActiveTab] = useState<"info" | "topology">("info");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
@@ -402,20 +404,53 @@ export const WorkspaceDialogComponent = observer(() => {
         }
     };
 
-    const handleShowGraph = async () => {
-        if (workspaceName) {
-            const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
-            setBranchGraph(graph);
-            setShowGraph(true);
-        }
-    };
+    // const handleShowGraph = async () => {
+    //     if (workspaceName) {
+    //         const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
+    //         setBranchGraph(graph);
+    //         setShowGraph(true);
+    //     }
+    // };
 
     return (
         <DraggableDialogComponent dialogProps={dialogProps} helpType={HelpType.WORKSPACE} defaultWidth={750} defaultHeight={550} minWidth={750} minHeight={550} enableResizing={true} dialogId={DialogId.Workspace}>
             <div className={Classes.DIALOG_BODY}>
-                <div className="workspace-container">
+                <div className="workspace-container" style={{ display: "flex", alignItems: "stretch" }}>
                     <div className="workspace-table-container">{tableContent}</div>
-                    <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div>
+                    {/* <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div> */}
+                        <Tabs
+                            id="workspace-info-tabs"
+                            selectedTabId={activeTab}
+                            onChange={tabId => setActiveTab(tabId as "info" | "topology")}
+                            renderActiveTabPanelOnly
+                        >
+                            <Tab id="info" title="Info" panel={
+                                workspaceList?.length ? (
+                                    <div style={{ maxHeight: 350, overflowY: "auto", paddingRight: 8 }}>
+                                        <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} />
+                                    </div>
+                                ) : null
+                            } />
+                            <Tab id="topology" title="Experiments" panel={
+                                <div style={{ padding: 12 }}>
+                                    <div>
+                                        <b>Branches:</b>
+                                        <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
+                                            {branches.length === 0 && <li>No Experiments found.</li>}
+                                            {branches.map(branch => (
+                                                <li key={branch} style={{
+                                                    fontWeight: branch === currentBranch ? "bold" : "normal",
+                                                    color: branch === currentBranch ? "#137cbd" : undefined
+                                                }}>
+                                                    {branch}
+                                                    {branch === currentBranch && " (current)"}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            } />
+                        </Tabs>
                 </div>
                 <InputGroup className="workspace-name-input" placeholder="Enter workspace name" value={workspaceName} autoFocus={true} onChange={handleInput} onKeyDown={handleKeyDown} />
                 {mode === WorkspaceDialogMode.Save && currentBranch && (
@@ -471,7 +506,7 @@ export const WorkspaceDialogComponent = observer(() => {
                         />
                     </FormGroup>
                 )}
-                {showGraph && (
+                {/* {showGraph && (
                     <div style={{ maxHeight: 300, overflow: "auto", background: "#222", color: "#fff", fontFamily: "monospace" }}>
                         {branchGraph.map(commit => (
                             <div key={commit.hash}>
@@ -502,7 +537,7 @@ export const WorkspaceDialogComponent = observer(() => {
                             </div>
                         ))}
                     </div>
-                )}
+                )} */}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
@@ -528,7 +563,17 @@ export const WorkspaceDialogComponent = observer(() => {
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
                     )} 
-                    <AnchorButton icon="git-branch" text="Show Branch Topology" onClick={handleShowGraph} />
+                    <AnchorButton 
+                        icon="git-branch" 
+                        text="Show Branch Topology" 
+                        onClick={async () => {
+                            setActiveTab("topology");
+                            // if (workspaceName) {
+                            //     const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
+                            //     setBranchGraph(graph);
+                            // }
+                        }}
+                    />
 	        </div>
             </div>
             <Dialog
