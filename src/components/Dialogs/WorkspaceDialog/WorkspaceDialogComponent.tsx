@@ -434,16 +434,42 @@ export const WorkspaceDialogComponent = observer(() => {
                             <Tab id="topology" title="Experiments" panel={
                                 <div style={{ padding: 12 }}>
                                     <div>
-                                        <b>Branches:</b>
+                                        <b>Experiments:</b>
                                         <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
                                             {branches.length === 0 && <li>No Experiments found.</li>}
                                             {branches.map(branch => (
                                                 <li key={branch} style={{
-                                                    fontWeight: branch === currentBranch ? "bold" : "normal",
-                                                    color: branch === currentBranch ? "#137cbd" : undefined
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    marginBottom: 4,
+                                                    fontWeight: "bold",
+                                                    color: "#137cbd",
+                                                    letterSpacing: "0.02em"
                                                 }}>
-                                                    {branch}
-                                                    {branch === currentBranch && " (current)"}
+                                                    <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch}</span>
+                                                    <AnchorButton
+                                                        minimal
+                                                        small
+                                                        style={{ marginLeft: 8 }}
+                                                        title={`Show saved notes for ${branch}`}
+                                                        onClick={async () => {
+                                                            if (!selectedWorkspace) return;
+                                                            setIsFetching(true);
+                                                            try {
+                                                                const commits = await appStore.apiService.getBranchCommits(selectedWorkspace.name, branch);
+                                                                if (commits && commits.length) {
+                                                                    setSelectedCommit(commits); 
+                                                                } else {
+                                                                    AppToaster.show(ErrorToast("No commits found for this branch."));
+                                                                }
+                                                            } catch (err) {
+                                                                AppToaster.show(ErrorToast("Failed to fetch commit log."));
+                                                            }
+                                                            setIsFetching(false);
+                                                        }}
+                                                    >
+                                                        Show saved notes
+                                                    </AnchorButton>
                                                 </li>
                                             ))}
                                         </ul>
@@ -579,17 +605,21 @@ export const WorkspaceDialogComponent = observer(() => {
             <Dialog
                 isOpen={!!selectedCommit}
                 onClose={() => setSelectedCommit(null)}
-                title={`Commit ${selectedCommit?.hash?.slice(0,7)}`}
+                title="Commit Log"
             >
-                {selectedCommit && (
+                {Array.isArray(selectedCommit) && selectedCommit.length > 0 ? (
+                    <div style={{ fontFamily: "monospace", maxHeight: 400, overflowY: "auto" }}>
+                        {selectedCommit.map((commit, idx) => (
+                            <div key={idx} style={{ marginBottom: 16, borderBottom: "1px solid #eee", paddingBottom: 8 }}>
+                                <div><b>Author:</b> {commit.author}</div>
+                                <div><b>Date:</b> {commit.date}</div>
+                                <div><b>Message:</b><pre style={{ whiteSpace: "pre-wrap" }}>{commit.body}</pre></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
                     <div style={{ fontFamily: "monospace" }}>
-                        <div><b>Hash:</b> {selectedCommit.hash}</div>
-                        <div><b>Author:</b> {selectedCommit.author} &lt;{selectedCommit.email}&gt;</div>
-                        <div><b>Date:</b> {selectedCommit.date}</div>
-                        <div><b>Branches/Tags:</b> {selectedCommit.refs}</div>
-                        <div><b>Parents:</b> {selectedCommit.parents.join(", ")}</div>
-                        <div><b>Subject:</b> {selectedCommit.subject}</div>
-                        <div><b>Message:</b><pre>{selectedCommit.body}</pre></div>
+                        <div>No commits found.</div>
                     </div>
                 )}
             </Dialog>

@@ -762,6 +762,21 @@ export class ApiService {
         return [];
     };
 
+    // Get commit log for a branch in a workspace
+    public getBranchCommits = async (workspaceName: string, branchName: string): Promise<{author: string, date: string, body: string}[]> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/branchCommits`;
+                const response = await this.axiosInstance.post(url, { workspaceName, branchName });
+                return response?.data?.commits ?? [];
+            } catch (err) {
+                console.log(err);
+                return [];
+            }
+        }
+        return [];
+    };
+
     public changeUserRole = async (workspaceId: string, username: string, role: "editor" | "viewer"): Promise<boolean> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
