@@ -432,49 +432,51 @@ export const WorkspaceDialogComponent = observer(() => {
                                 ) : null
                             } />
                             <Tab id="topology" title="Experiments" panel={
-                                <div style={{ padding: 12 }}>
-                                    <div>
-                                        <b>Experiments:</b>
-                                        <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
-                                            {branches.length === 0 && <li>No Experiments found.</li>}
-                                            {branches.map(branch => (
-                                                <li key={branch.replace(/^[^ ]* /, '')} style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    marginBottom: 4,
-                                                    fontWeight: "bold",
-                                                    color: "#137cbd",
-                                                    letterSpacing: "0.02em"
-                                                }}>
-                                                    <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch.replace(/^[^ ]* /, '')}</span>
-                                                    <AnchorButton
-                                                        minimal
-                                                        small
-                                                        style={{ marginLeft: 8 }}
-                                                        title={`Show saved notes for ${branch.replace(/^[^ ]* /, '')}`}
-                                                        onClick={async () => {
-                                                            if (!selectedWorkspace) return;
-                                                            setIsFetching(true);
-                                                            try {
-                                                                const commits = await appStore.apiService.getBranchCommits(selectedWorkspace.name, branch);
-                                                                if (commits && commits.length) {
-                                                                    setSelectedCommit(commits); 
-                                                                } else {
-                                                                    AppToaster.show(ErrorToast("No commits found for this branch."));
+                                selectedWorkspace ? (
+                                    <div style={{ padding: 12 }}>
+                                        <div>
+                                            <b>Experiments:</b>
+                                            <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
+                                                {branches.length === 0 && <li>No Experiments found.</li>}
+                                                {branches.map(branch => (
+                                                    <li key={branch.replace(/^[^ ]* /, '')} style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        marginBottom: 4,
+                                                        fontWeight: "bold",
+                                                        color: "#137cbd",
+                                                        letterSpacing: "0.02em"
+                                                    }}>
+                                                        <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch.replace(/^[^ ]* /, '')}</span>
+                                                        <AnchorButton
+                                                            minimal
+                                                            small
+                                                            style={{ marginLeft: 8 }}
+                                                            title={`Show saved notes for ${branch.replace(/^[^ ]* /, '')}`}
+                                                            onClick={async () => {
+                                                                if (!selectedWorkspace) return;
+                                                                setIsFetching(true);
+                                                                try {
+                                                                    const commits = await appStore.apiService.getBranchCommits(selectedWorkspace.name, branch);
+                                                                    if (commits && commits.length) {
+                                                                        setSelectedCommit(commits); 
+                                                                    } else {
+                                                                        AppToaster.show(ErrorToast("No commits found for this branch."));
+                                                                    }
+                                                                } catch (err) {
+                                                                    AppToaster.show(ErrorToast("Failed to fetch commit log."));
                                                                 }
-                                                            } catch (err) {
-                                                                AppToaster.show(ErrorToast("Failed to fetch commit log."));
-                                                            }
-                                                            setIsFetching(false);
-                                                        }}
-                                                    >
-                                                        Show saved notes
-                                                    </AnchorButton>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                                                setIsFetching(false);
+                                                            }}
+                                                        >
+                                                            Show saved notes
+                                                        </AnchorButton>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : null    
                             } />
                         </Tabs>
                 </div>
