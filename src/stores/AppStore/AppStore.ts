@@ -3711,7 +3711,7 @@ export class AppStore {
         if (success) {
             this.setCurrentWorkspaceBranch(newBranch.replace(/^[^ ]* /, ''));
             
-            AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch} in workspace ${name}.`));
+            AppToaster.show(SuccessToast("console", `Switched to branch ${newBranch.replace(/^[^ ]* /, '')} in workspace ${name}.`));
             // Reload the workspace to reflect the new branch
             await this.loadWorkspace(name);
             

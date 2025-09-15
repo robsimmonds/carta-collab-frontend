@@ -37,6 +37,11 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     const handleBranch = async () => {
         if (workspace && branchName.trim()) {
             await appStore.branchWorkspace(workspace.name, branchName.trim());
+            // Refresh branch list after creating a new branch
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, appStore.currentWorkspaceBranch || "master");
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setBranchName(""); // clear the input
         }
         //handleClose();
     };
@@ -86,7 +91,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                         flex: 1,
                                     }}
                                 >
-                                    {branch}
+                                    {branch.replace(/^[^ ]* /, '')}
                                     {branch === appStore.currentWorkspaceBranch && " (current)"}
                                 </span>
                                 {branch !== appStore.currentWorkspaceBranch && branch.replace(/^[^ ]* /, '') !== "master" && (
@@ -97,7 +102,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                             intent="danger"
                                             style={{ marginLeft: 8 }}
                                             onClick={async () => {
-                                                if (window.confirm(`Delete Experiment "${branch}"? This cannot be undone.`)) {
+                                                if (window.confirm(`Delete Experiment "${branch.replace(/^[^ ]* /, '')}"? This cannot be undone.`)) {
                                                     await appStore.deleteWorkspaceBranch(workspace.name, branch);
                                                     // Refresh branch list
                                                     const branchInfo = await appStore.listWorkspaceBranches(workspace.name);

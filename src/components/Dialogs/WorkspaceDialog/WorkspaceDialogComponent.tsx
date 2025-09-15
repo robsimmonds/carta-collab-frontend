@@ -438,7 +438,7 @@ export const WorkspaceDialogComponent = observer(() => {
                                         <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
                                             {branches.length === 0 && <li>No Experiments found.</li>}
                                             {branches.map(branch => (
-                                                <li key={branch} style={{
+                                                <li key={branch.replace(/^[^ ]* /, '')} style={{
                                                     display: "flex",
                                                     alignItems: "center",
                                                     marginBottom: 4,
@@ -446,12 +446,12 @@ export const WorkspaceDialogComponent = observer(() => {
                                                     color: "#137cbd",
                                                     letterSpacing: "0.02em"
                                                 }}>
-                                                    <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch}</span>
+                                                    <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch.replace(/^[^ ]* /, '')}</span>
                                                     <AnchorButton
                                                         minimal
                                                         small
                                                         style={{ marginLeft: 8 }}
-                                                        title={`Show saved notes for ${branch}`}
+                                                        title={`Show saved notes for ${branch.replace(/^[^ ]* /, '')}`}
                                                         onClick={async () => {
                                                             if (!selectedWorkspace) return;
                                                             setIsFetching(true);
