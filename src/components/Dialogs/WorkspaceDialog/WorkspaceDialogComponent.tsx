@@ -613,7 +613,7 @@ export const WorkspaceDialogComponent = observer(() => {
                     <div style={{ fontFamily: "monospace", maxHeight: 400, overflowY: "auto" }}>
                         {selectedCommit.map((commit, idx) => (
                             <div key={idx} style={{ marginBottom: 16, borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                                <div><b>Author:</b> {commit.author}</div>
+                                {/* <div><b>Author:</b> {commit.author}</div> */}
                                 <div><b>Date:</b> {commit.date}</div>
                                 <div><b>Message:</b><pre style={{ whiteSpace: "pre-wrap" }}>{commit.body}</pre></div>
                             </div>

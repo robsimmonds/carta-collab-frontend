@@ -5,6 +5,8 @@ import { observer } from "mobx-react";
 
 import { AppStore, DialogId, DialogStore } from "stores";
 
+import {AppToaster,SuccessToast} from "../../Shared";
+
 export const BranchWorkspaceDialogComponent = observer(() => {
     const appStore = AppStore.Instance;
     const dialogStore = DialogStore.Instance;
@@ -32,6 +34,17 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.BranchWorkspace);
         setBranchName("");
+    };
+
+    const handleRefreshWorkspace = async () => {
+        if (workspace?.name) {
+            await appStore.loadWorkspace(workspace.name);
+            // Optionally, refresh branches after reload
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, appStore.currentWorkspaceBranch || "master");
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            AppToaster.show(SuccessToast("refresh", "Workspace refreshed to latest state"));
+        }
     };
 
     const handleBranch = async () => {
@@ -81,6 +94,20 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                     />
                 </FormGroup>
                 <FormGroup label="Experiments" helperText="Switch between experiments or delete an experiment (except 'main').">
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ fontWeight: 500 }}>
+                            {"Refresh workspace to current state"}
+                        </span>
+                        <Tooltip content="Refresh workspace to latest state">
+                            <Button
+                                icon="refresh"
+                                minimal
+                                style={{ marginLeft: 8 }}
+                                onClick={handleRefreshWorkspace}
+                                disabled={!workspace?.name}
+                            />
+                        </Tooltip>
+                    </div>
                     <div>
                         {branches.map(branch => (
                             <div key={branch} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
