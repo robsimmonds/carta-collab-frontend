@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fixed hotkeys of the next and previous images for macOS, resolved keyboard event conflicts between the image viewer and the dropdown menu, and unified the hotkeys dialog and adjusted the layout ([#2575](https://github.com/CARTAvis/carta-frontend/issues/2575), [#758](https://github.com/CARTAvis/carta-frontend/issues/758)).
 * Fixed incorrect aspect ratio and compass size when images contained incomplete `CDELTi` and `PCi_j` information ([#2382](https://github.com/CARTAvis/carta-frontend/issues/2382), [#2399](https://github.com/CARTAvis/carta-frontend/issues/2399)).
 * Fixed the failure to switch to pixel coordinates when images had non-square pixels ([#2602](https://github.com/CARTAvis/carta-frontend/issues/2602)).
+* Made file header search bar move with the window ([#1459](https://github.com/CARTAvis/carta-frontend/issues/1459)).
 ### Changed
 * Set the default aspect ratio to unity when images lacked valid WCS information ([#2604](https://github.com/CARTAvis/carta-frontend/issues/2604)).
 
