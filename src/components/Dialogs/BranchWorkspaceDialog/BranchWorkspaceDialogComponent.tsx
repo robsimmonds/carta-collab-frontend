@@ -76,7 +76,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title="Experiment Management"
+            title="Branch Management"
             canEscapeKeyClose
             canOutsideClickClose
             className={Classes.DIALOG}
@@ -85,15 +85,15 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                 <FormGroup label="Workspace Name">
                     <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
-                <FormGroup label="Experiment Name" helperText="Enter a name for the new experiment.">
+                <FormGroup label="Branch Name" helperText="Enter a name for the new branch.">
                     <InputGroup
                         value={branchName}
                         onChange={e => setBranchName(e.currentTarget.value)}
-                        placeholder="Experiment name"
+                        placeholder="Branch name"
                         autoFocus
                     />
                 </FormGroup>
-                <FormGroup label="Experiments" helperText="Switch between experiments or delete an experiment (except 'main').">
+                <FormGroup label="Branches" helperText="Switch between branches or delete a branch (except 'main').">
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
                         <span style={{ fontWeight: 500 }}>
                             {"Refresh workspace to current state"}
@@ -129,7 +129,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                             intent="danger"
                                             style={{ marginLeft: 8 }}
                                             onClick={async () => {
-                                                if (window.confirm(`Delete Experiment "${branch.replace(/^[^ ]* /, '')}"? This cannot be undone.`)) {
+                                                if (window.confirm(`Delete Branch "${branch.replace(/^[^ ]* /, '')}"? This cannot be undone.`)) {
                                                     await appStore.deleteWorkspaceBranch(workspace.name, branch);
                                                     // Refresh branch list
                                                     const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
@@ -159,7 +159,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Experiment</Button>
+                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Branch</Button>
                 </div>
             </div>
         </Dialog>

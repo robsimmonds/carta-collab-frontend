@@ -61,7 +61,7 @@ export const SaveWorkspaceDialogComponent = observer(() => {
                     <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                     {appStore.currentWorkspaceBranch  && (
                         <div style={{ fontSize: '0.9em', fontStyle: 'italic', color: '#888' }}>
-                            Experiment: <b>{appStore.currentWorkspaceBranch.replace(/^[^a-zA-Z0-9]+/, '').trim() }</b>
+                            Branch: <b>{appStore.currentWorkspaceBranch.replace(/^[^a-zA-Z0-9]+/, '').trim() }</b>
                         </div>
                     )}
                 </FormGroup>

@@ -431,13 +431,13 @@ export const WorkspaceDialogComponent = observer(() => {
                                     </div>
                                 ) : null
                             } />
-                            <Tab id="topology" title="Experiments" panel={
+                            <Tab id="topology" title="Branch" panel={
                                 selectedWorkspace ? (
                                     <div style={{ padding: 12 }}>
                                         <div>
-                                            <b>Experiments:</b>
+                                            <b>Branches:</b>
                                             <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
-                                                {branches.length === 0 && <li>No Experiments found.</li>}
+                                                {branches.length === 0 && <li>No Branches found.</li>}
                                                 {branches.map(branch => (
                                                     <li key={branch.replace(/^[^ ]* /, '')} style={{
                                                         display: "flex",

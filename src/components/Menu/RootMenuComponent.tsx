@@ -286,7 +286,7 @@ export class RootMenuComponent extends React.Component {
                         <MenuItem text="Copy" icon="duplicate" disabled={appStore.openFileDisabled  || !appStore.activeWorkspace.editable} onClick={() => appStore.dialogStore.showDialog(DialogId.CloneWorkspace)} />
                     )}
                     {appStore.activeWorkspace && (
-                        <MenuItem text="Experiment" icon="git-branch" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.BranchWorkspace)} />
+                        <MenuItem text="Branch" icon="git-branch" disabled={appStore.openFileDisabled} onClick={() => appStore.dialogStore.showDialog(DialogId.BranchWorkspace)} />
                     )}
                 </MenuItem>
                 <MenuDivider />
