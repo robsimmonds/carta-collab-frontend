@@ -9,6 +9,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
     const dialogStore = DialogStore.Instance;
     const isOpen = dialogStore.dialogVisible.get(DialogId.CloneWorkspace);
     const workspace = appStore.activeWorkspace;
+    const currentBranch = appStore.currentWorkspaceBranch || "master"; 
 
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.CloneWorkspace);
@@ -16,7 +17,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
 
     const handleClone = async () => {
         if (workspace) {
-            await appStore.cloneWorkspace(workspace.name);
+            await appStore.cloneWorkspace(workspace.name, currentBranch);
         }
         handleClose();
     };
@@ -25,7 +26,7 @@ export const CloneWorkspaceDialogComponent = observer(() => {
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title="Clone Workspace"
+            title="Copy Workspace"
             canEscapeKeyClose
             canOutsideClickClose
             className={Classes.DIALOG}
@@ -34,11 +35,14 @@ export const CloneWorkspaceDialogComponent = observer(() => {
                 <FormGroup label="Workspace Name">
                     <div style={{ padding: '8px 0', fontWeight: 500 }}>{workspace?.name || ""}</div>
                 </FormGroup>
+                <div style={{ fontSize: "0.9em", color: "#888", marginTop: 8 }}>
+                    This will create a copy of the current workspace.
+                </div>
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleClone} disabled={!workspace}>Clone</Button>
+                    <Button intent="primary" onClick={handleClone} disabled={!workspace || !workspace.editable}>Copy</Button>
                 </div>
             </div>
         </Dialog>

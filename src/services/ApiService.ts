@@ -528,10 +528,15 @@ export class ApiService {
         }
     };
 
-    public getWorkspace = async (name: string, isKey = false): Promise<Workspace | undefined> => {
+    public getWorkspace = async (name: string,isKey = false, branchName = "master"): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
-                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${isKey ? "key/" : ""}${name}`;
+                let url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${isKey ? "key/" : ""}${name}`;
+                
+                if (branchName && branchName !== "master") {
+                    url += `?branchName=${encodeURIComponent(branchName)}`;
+         }
+
                 const response = await this.axiosInstance.get<{workspace: Workspace; success: boolean}>(url);
                 if (response?.data?.success) {
                     return response.data.workspace;
@@ -564,10 +569,19 @@ export class ApiService {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/createWorkspace`;
                 const res = await this.axiosInstance.put(url, {workspaceName, workspace});
-                if (res.data?.workspace?.id) {
-                    workspace.id = res.data?.workspace?.id;
+                if (res.data?.success && res.data?.workspace) {
+                    return {
+                        ...workspace,
+                        id: res.data.workspace.id,
+                        editable: res.data.workspace.editable,
+                        name: res.data.workspace.name,
+                        users: res.data.workspace.users,
+                        user: res.data.workspace.user,
+                        role: res.data.workspace.role,
+                        roles: res.data.workspace.roles
+                    };
                 }
-                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                return undefined;
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -584,15 +598,24 @@ export class ApiService {
         }
     };
 
-    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string): Promise<Workspace | undefined> => {
+    public setWorkspace = async (workspaceName: string, workspace: Workspace, commitMessage?: string, branchName?: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/setWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage});
+                const res = await this.axiosInstance.put(url, {workspaceName, workspace, commitMessage,branchName });
                 if (res.data?.workspace?.id) {
                     workspace.id = res.data?.workspace?.id;
                 }
-                return {...workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                return {
+                ...workspace,
+                id: res.data.workspace.id,
+                editable: res.data.workspace.editable,
+                name: res.data.workspace.name,
+                users: res.data.workspace.users ?? [],
+                user: res.data.workspace.user,
+                role: res.data.workspace.role,
+                roles: res.data.workspace.roles
+            };
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -609,14 +632,27 @@ export class ApiService {
         }
     };
 
-    public cloneWorkspace = async (workspaceName: string): Promise<Workspace | undefined> => {
+    public cloneWorkspace = async (workspaceName: string, branchName: string): Promise<Workspace | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/cloneWorkspace`;
-                const res = await this.axiosInstance.put(url, {workspaceName});
+                const res = await this.axiosInstance.put(url, {workspaceName, branchName});
               	
-                return {...res.data?.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
+                //return {...res.data?.workspace, editable: res.data?.workspace?.editable, name: workspaceName};
                 //return res?.data?.success;
+                if (res.data?.success && res.data?.workspace) {
+                    return {
+                        ...res.data?.workspace,
+                        id: res.data.workspace.id,
+                        editable: res.data.workspace.editable,
+                        name: res.data.workspace.name,
+                        users: res.data.workspace.users,
+                        user: res.data.workspace.user,
+                        role: res.data.workspace.role,
+                        roles: res.data.workspace.roles
+                    };
+                }
+                return undefined;
             } catch (err) {
                 console.log(err);
                 return undefined;
@@ -663,12 +699,15 @@ export class ApiService {
         return false;
     };
 
-    public getSharedWorkspaceKey = async (workspaceId: string, username?: string): Promise<string | undefined> => {
+    public getSharedWorkspaceKey = async (workspaceId: string, username?: string, role?: "editor" | "viewer"): Promise<string | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/share/workspace/${workspaceId}`;
                 // Send username in the body if provided
-                const response = await this.axiosInstance.post(url, username ? { username } : undefined);
+                const data: any = {};
+                if (username) data.username = username;
+                if (role) data.role = role;
+                const response = await this.axiosInstance.post(url, Object.keys(data).length ? data : undefined);
                 return response?.data?.success ? response.data.shareKey : undefined;
             } catch (err) {
                 console.log(err);
@@ -702,11 +741,11 @@ export class ApiService {
     };
 
     // List branches for a workspace
-    public listWorkspaceBranches = async (workspaceName: string): Promise<{branches: string[], current: string} | undefined> => {
+    public listWorkspaceBranches = async (workspaceName: string, branchName?: string): Promise<{branches: string[], current: string} | undefined> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/listWorkspaceBranches`;
-                const response = await this.axiosInstance.post(url, { workspaceName });
+                const response = await this.axiosInstance.post(url, { workspaceName,branchName });
                 return { branches: response?.data?.branches, current: response?.data?.current };
             } catch (err) {
                 console.log(err);
@@ -717,11 +756,11 @@ export class ApiService {
     };
 
     // Switch to a branch in a workspace
-    public switchWorkspaceBranch = async (workspaceName: string, branchName: string): Promise<boolean> => {
+    public switchWorkspaceBranch = async (workspaceName: string, newBranch: string, prevBranch: string): Promise<boolean> => {
         if (ApiService.RuntimeConfig.apiAddress) {
             try {
                 const url = `${ApiService.RuntimeConfig.apiAddress}/database/switchWorkspaceBranch`;
-                const response = await this.axiosInstance.put(url, { workspaceName, branchName });
+                const response = await this.axiosInstance.put(url, { workspaceName, newBranch, prevBranch});
                 return response?.data?.success;
             } catch (err) {
                 console.log(err);
@@ -744,4 +783,48 @@ export class ApiService {
         }
         return [];
     };
+
+    // Get commit log for a branch in a workspace
+    public getBranchCommits = async (workspaceName: string, branchName: string): Promise<{author: string, date: string, body: string}[]> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/branchCommits`;
+                const response = await this.axiosInstance.post(url, { workspaceName, branchName });
+                return response?.data?.commits ?? [];
+            } catch (err) {
+                console.log(err);
+                return [];
+            }
+        }
+        return [];
+    };
+
+    public changeUserRole = async (workspaceId: string, username: string, role: "editor" | "viewer"): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/changeUserRole`;
+                const response = await this.axiosInstance.put(url, { username, role });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
+    public removeUserFromWorkspace = async (workspaceId: string, username: string): Promise<boolean> => {
+        if (ApiService.RuntimeConfig.apiAddress) {
+            try {
+                const url = `${ApiService.RuntimeConfig.apiAddress}/database/workspace/${workspaceId}/removeUser`;
+                const response = await this.axiosInstance.put(url, { username });
+                return response?.data?.success;
+            } catch (err) {
+                console.log(err);
+                return false;
+            }
+        }
+        return false;
+    };
+
 }

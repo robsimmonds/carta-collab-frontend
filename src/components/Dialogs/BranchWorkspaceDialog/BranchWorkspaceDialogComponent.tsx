@@ -5,6 +5,8 @@ import { observer } from "mobx-react";
 
 import { AppStore, DialogId, DialogStore } from "stores";
 
+import {AppToaster,SuccessToast} from "../../Shared";
+
 export const BranchWorkspaceDialogComponent = observer(() => {
     const appStore = AppStore.Instance;
     const dialogStore = DialogStore.Instance;
@@ -17,34 +19,54 @@ export const BranchWorkspaceDialogComponent = observer(() => {
     useEffect(() => {
         async function fetchBranches() {
             if (workspace) {
-                const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
+                const branchInfo = await appStore.listWorkspaceBranches(workspace.name,appStore.currentWorkspaceBranch|| "master");
                 setBranches(branchInfo?.branches || []);
-                setCurrentBranch(branchInfo?.current || "");
+                if (branchInfo?.current && branchInfo.current !== appStore.currentWorkspaceBranch) {
+                    appStore.setCurrentWorkspaceBranch(branchInfo.current);
+                }
             }
         }
-        if (isOpen && workspace) {
+        if (isOpen && workspace?.name) {
             fetchBranches();
         }
-    }, [isOpen, workspace, appStore]);
+    }, [isOpen, workspace?.name, appStore, currentBranch]);
 
     const handleClose = () => {
         dialogStore.hideDialog(DialogId.BranchWorkspace);
         setBranchName("");
     };
 
+    const handleRefreshWorkspace = async () => {
+        if (workspace?.name) {
+            await appStore.loadWorkspace(workspace.name);
+            // Optionally, refresh branches after reload
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, appStore.currentWorkspaceBranch || "master");
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            AppToaster.show(SuccessToast("refresh", "Workspace refreshed to latest state"));
+        }
+    };
+
     const handleBranch = async () => {
         if (workspace && branchName.trim()) {
             await appStore.branchWorkspace(workspace.name, branchName.trim());
+            // Refresh branch list after creating a new branch
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, appStore.currentWorkspaceBranch || "master");
+            setBranches(branchInfo?.branches || []);
+            setCurrentBranch(branchInfo?.current || "");
+            setBranchName(""); // clear the input
         }
-        handleClose();
+        //handleClose();
     };
 
     const handleSwitchBranch = async (branchToSwitch: string) => {
-        if (!workspace || !branchToSwitch || branchToSwitch === currentBranch) return;
-        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch);
+        if (!workspace || !branchToSwitch || branchToSwitch === appStore.currentWorkspaceBranch) return;
+        const success = await appStore.switchWorkspaceBranch(workspace.name, branchToSwitch,appStore.currentWorkspaceBranch);
         if (success) {
+            setCurrentBranch(branchToSwitch); // update current branch
+            //appStore.setCurrentWorkspaceBranch(branchToSwitch); // update app store state for saveing
             // Refresh branch info after switching
-            const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
+            const branchInfo = await appStore.listWorkspaceBranches(workspace.name, branchToSwitch);
             setBranches(branchInfo?.branches || []);
             setCurrentBranch(branchInfo?.current || "");
         }
@@ -54,7 +76,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title="Branch Workspace"
+            title="Branch Management"
             canEscapeKeyClose
             canOutsideClickClose
             className={Classes.DIALOG}
@@ -71,21 +93,35 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                         autoFocus
                     />
                 </FormGroup>
-                <FormGroup label="Branches">
+                <FormGroup label="Branches" helperText="Switch between branches or delete a branch (except 'main').">
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ fontWeight: 500 }}>
+                            {"Refresh workspace to current state"}
+                        </span>
+                        <Tooltip content="Refresh workspace to latest state">
+                            <Button
+                                icon="refresh"
+                                minimal
+                                style={{ marginLeft: 8 }}
+                                onClick={handleRefreshWorkspace}
+                                disabled={!workspace?.name}
+                            />
+                        </Tooltip>
+                    </div>
                     <div>
                         {branches.map(branch => (
                             <div key={branch} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
                                 <span
                                     style={{
-                                        fontWeight: branch === currentBranch ? "bold" : "normal",
-                                        color: branch === currentBranch ? "#137cbd" : undefined,
+                                        fontWeight: branch === appStore.currentWorkspaceBranch? "bold" : "normal",
+                                        color: branch === appStore.currentWorkspaceBranch? "#137cbd" : undefined,
                                         flex: 1,
                                     }}
                                 >
-                                    {branch}
-                                    {branch === currentBranch && " (current)"}
+                                    {branch.replace(/^[^ ]* /, '')}
+                                    {branch === appStore.currentWorkspaceBranch && " (current)"}
                                 </span>
-                                {branch !== currentBranch && (
+                                {branch !== appStore.currentWorkspaceBranch && branch.replace(/^[^ ]* /, '') !== "master" && (
                                     <Tooltip content="Delete branch">
                                         <Button
                                             icon="trash"
@@ -93,7 +129,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                             intent="danger"
                                             style={{ marginLeft: 8 }}
                                             onClick={async () => {
-                                                if (window.confirm(`Delete branch "${branch}"? This cannot be undone.`)) {
+                                                if (window.confirm(`Delete Branch "${branch.replace(/^[^ ]* /, '')}"? This cannot be undone.`)) {
                                                     await appStore.deleteWorkspaceBranch(workspace.name, branch);
                                                     // Refresh branch list
                                                     const branchInfo = await appStore.listWorkspaceBranches(workspace.name);
@@ -104,7 +140,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
                                         />
                                     </Tooltip>
                                 )}
-                                {branch !== currentBranch && (
+                                {branch !== appStore.currentWorkspaceBranch && (
                                     <Button
                                         style={{ marginLeft: 8 }}
                                         intent="primary"
@@ -123,7 +159,7 @@ export const BranchWorkspaceDialogComponent = observer(() => {
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
                     <Button onClick={handleClose}>Cancel</Button>
-                    <Button intent="primary" onClick={handleBranch} disabled={!workspace || !branchName.trim()}>Branch</Button>
+                    <Button intent="primary" onClick={handleBranch} disabled={!workspace  || !workspace.editable  || !branchName.trim()}> Create Branch</Button>
                 </div>
             </div>
         </Dialog>

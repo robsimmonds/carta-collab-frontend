@@ -1,6 +1,6 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
-import {AnchorButton, Classes, Dialog,DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner} from "@blueprintjs/core";
+import {AnchorButton, Classes, Dialog,DialogProps, FormGroup,InputGroup, Intent, NonIdealState, Spinner, Tab,Tabs} from "@blueprintjs/core";
 import {Cell, Column, Region, RenderMode, SelectionModes, Table2, TableLoadingOption} from "@blueprintjs/table";
 import classNames from "classnames";
 import {observer} from "mobx-react";
@@ -36,9 +36,11 @@ export const WorkspaceDialogComponent = observer(() => {
     const [selectedBranch, setSelectedBranch] = useState<string>("");
     const [currentBranch, setCurrentBranch] = useState<string>("");
     const [branchName, setBranchName] = useState("");
-    const [branchGraph, setBranchGraph] = useState<any[]>([]);
-    const [showGraph, setShowGraph] = useState(false);
+    //const [branchGraph, setBranchGraph] = useState<any[]>([]);
+    //const [showGraph, setShowGraph] = useState(false);
     const [selectedCommit, setSelectedCommit] = useState<any | null>(null);
+
+    const [activeTab, setActiveTab] = useState<"info" | "topology">("info");
 
     const appStore = AppStore.Instance;
     const mode = appStore.dialogStore.workspaceDialogMode;
@@ -139,7 +141,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
         try {
             // Calls a new store method that creates db and inits git
-            const res = await appStore.cloneWorkspace(name);
+            const res = await appStore.cloneWorkspace(name, branchName);
             if (res) {
                 AppToaster.show(SuccessToast("floppy-disk", "Workspace cloned"));
                 handleCloseClicked();
@@ -195,6 +197,18 @@ export const WorkspaceDialogComponent = observer(() => {
 
             setIsFetching(true);
             try {
+                //appStore.setCurrentWorkspaceBranch("master"); // Reset to master branch on open
+
+                if (appStore.currentWorkspaceBranch !== "master") {
+                    await appStore.switchWorkspaceBranch(name, "master", appStore.currentWorkspaceBranch);
+                }
+
+                // Update branch info after switching
+                const branchInfo = await appStore.listWorkspaceBranches(name);
+                setBranches(branchInfo?.branches || []);
+                setCurrentBranch(branchInfo?.current || "");
+                setSelectedBranch(branchInfo?.current || "");
+
                 const res = await appStore.loadWorkspace(name);
                 if (res) {
                     AppToaster.show(SuccessToast("floppy-disk", "Workspace loaded"));
@@ -231,15 +245,7 @@ export const WorkspaceDialogComponent = observer(() => {
         if (!workspaceName || !workspaceList.find(item => item.name === workspaceName)) {
             return;
         }
-        // If a branch is selected and it's not the current branch, switch first
-        if (selectedWorkspace && selectedBranch && selectedBranch !== currentBranch) {
-            await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
-            // Refresh branch info after switching
-            const branchInfo = await appStore.listWorkspaceBranches(selectedWorkspace.name);
-            setBranches(branchInfo?.branches || []);
-            setCurrentBranch(branchInfo?.current || "");
-            setSelectedBranch(branchInfo?.current || "");
-        }
+        
         openWorkspace(workspaceName);
     };
 
@@ -277,6 +283,7 @@ export const WorkspaceDialogComponent = observer(() => {
         setSelectedWorkspace(entry);
 
         if (entry.name) {
+            // the listing issue????
             const branchInfo = await appStore.listWorkspaceBranches(entry.name);
             setBranches(branchInfo?.branches || []);
             setCurrentBranch(branchInfo?.current || "");
@@ -384,7 +391,7 @@ export const WorkspaceDialogComponent = observer(() => {
 
     const handleSwitchBranch = async () => {
         if (!selectedWorkspace || !selectedBranch) return;
-        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch);
+        const success = await appStore.switchWorkspaceBranch(selectedWorkspace.name, selectedBranch, currentBranch);
         if (success) {
             AppToaster.show(SuccessToast("console", `Switched to branch ${selectedBranch}`));
             // Refresh branch info after switching
@@ -397,20 +404,81 @@ export const WorkspaceDialogComponent = observer(() => {
         }
     };
 
-    const handleShowGraph = async () => {
-        if (workspaceName) {
-            const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
-            setBranchGraph(graph);
-            setShowGraph(true);
-        }
-    };
+    // const handleShowGraph = async () => {
+    //     if (workspaceName) {
+    //         const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
+    //         setBranchGraph(graph);
+    //         setShowGraph(true);
+    //     }
+    // };
 
     return (
         <DraggableDialogComponent dialogProps={dialogProps} helpType={HelpType.WORKSPACE} defaultWidth={750} defaultHeight={550} minWidth={750} minHeight={550} enableResizing={true} dialogId={DialogId.Workspace}>
             <div className={Classes.DIALOG_BODY}>
-                <div className="workspace-container">
+                <div className="workspace-container" style={{ display: "flex", alignItems: "stretch" }}>
                     <div className="workspace-table-container">{tableContent}</div>
-                    <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div>
+                    {/* <div className="workspace-info-container">{workspaceList?.length ? <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} /> : null}</div> */}
+                        <Tabs
+                            id="workspace-info-tabs"
+                            selectedTabId={activeTab}
+                            onChange={tabId => setActiveTab(tabId as "info" | "topology")}
+                            renderActiveTabPanelOnly
+                        >
+                            <Tab id="info" title="Info" panel={
+                                workspaceList?.length ? (
+                                    <div style={{ maxHeight: 350, overflowY: "auto", paddingRight: 8 }}>
+                                        <WorkspaceInfoComponent workspaceListItem={selectedWorkspace} />
+                                    </div>
+                                ) : null
+                            } />
+                            <Tab id="topology" title="Branch Info" panel={
+                                selectedWorkspace ? (
+                                    <div style={{ padding: 12 }}>
+                                        <div>
+                                            <b>Branches:</b>
+                                            <ul style={{ fontFamily: "monospace", color: "#333", margin: 0, paddingLeft: 18 }}>
+                                                {branches.length === 0 && <li>No Branches found.</li>}
+                                                {branches.map(branch => (
+                                                    <li key={branch.replace(/^[^ ]* /, '')} style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        marginBottom: 4,
+                                                        fontWeight: "bold",
+                                                        color: "#137cbd",
+                                                        letterSpacing: "0.02em"
+                                                    }}>
+                                                        <span style={{ minWidth: 0, overflowWrap: "break-word" }}>{branch.replace(/^[^ ]* /, '')}</span>
+                                                        <AnchorButton
+                                                            minimal
+                                                            small
+                                                            style={{ marginLeft: 8 }}
+                                                            title={`Show saved notes for ${branch.replace(/^[^ ]* /, '')}`}
+                                                            onClick={async () => {
+                                                                if (!selectedWorkspace) return;
+                                                                setIsFetching(true);
+                                                                try {
+                                                                    const commits = await appStore.apiService.getBranchCommits(selectedWorkspace.name, branch);
+                                                                    if (commits && commits.length) {
+                                                                        setSelectedCommit(commits); 
+                                                                    } else {
+                                                                        AppToaster.show(ErrorToast("No commits found for this branch."));
+                                                                    }
+                                                                } catch (err) {
+                                                                    AppToaster.show(ErrorToast("Failed to fetch commit log."));
+                                                                }
+                                                                setIsFetching(false);
+                                                            }}
+                                                        >
+                                                            Show saved notes
+                                                        </AnchorButton>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                ) : null    
+                            } />
+                        </Tabs>
                 </div>
                 <InputGroup className="workspace-name-input" placeholder="Enter workspace name" value={workspaceName} autoFocus={true} onChange={handleInput} onKeyDown={handleKeyDown} />
                 {mode === WorkspaceDialogMode.Save && currentBranch && (
@@ -455,27 +523,7 @@ export const WorkspaceDialogComponent = observer(() => {
                         )}
                     </div>
                 )}
-                {mode === WorkspaceDialogMode.Open && selectedWorkspace && (
-                    <div style={{ margin: "8px 0" }}>
-                        <label>Open Branch:</label>
-                        <select
-                            value={selectedBranch}
-                            onChange={e => setSelectedBranch(e.target.value)}
-                            style={{ marginLeft: 8, minWidth: 120 }}
-                        >
-                            {branches.map(branch => (
-                                <option key={branch} value={branch}>
-                                    {branch}
-                                </option>
-                            ))}
-                        </select>
-                        {currentBranch && (
-                            <span style={{ marginLeft: 16, fontStyle: "italic" }}>
-                                Current: {currentBranch}
-                            </span>
-                        )}
-                    </div>
-                )}
+                
                 {mode === WorkspaceDialogMode.Branch && (
                     <FormGroup label="Branch Name" labelFor="branch-name-input">
                         <InputGroup
@@ -486,7 +534,7 @@ export const WorkspaceDialogComponent = observer(() => {
                         />
                     </FormGroup>
                 )}
-                {showGraph && (
+                {/* {showGraph && (
                     <div style={{ maxHeight: 300, overflow: "auto", background: "#222", color: "#fff", fontFamily: "monospace" }}>
                         {branchGraph.map(commit => (
                             <div key={commit.hash}>
@@ -517,11 +565,11 @@ export const WorkspaceDialogComponent = observer(() => {
                             </div>
                         ))}
                     </div>
-                )}
+                )} */}
             </div>
             <div className={Classes.DIALOG_FOOTER}>
                 <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-                    <AnchorButton intent={Intent.DANGER} icon="trash" onClick={handleDeleteClicked} text="Delete" disabled={isFetching || !selectedWorkspace} />
+                    <AnchorButton intent={Intent.DANGER} icon="trash" onClick={handleDeleteClicked} text="Delete" disabled={isFetching || !selectedWorkspace  || !appStore.activeWorkspace?.editable } />
                     {mode === WorkspaceDialogMode.Save && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleSaveClicked} text="Save" disabled={isFetching || !workspaceName} />
                     )}
@@ -543,23 +591,37 @@ export const WorkspaceDialogComponent = observer(() => {
                     {mode === WorkspaceDialogMode.Branch && (
                         <AnchorButton intent={Intent.PRIMARY} onClick={handleBranchClicked} text="Branch" disabled={isFetching || !selectedWorkspace} /> 
                     )} 
-                    <AnchorButton icon="git-branch" text="Show Branch Topology" onClick={handleShowGraph} />
+                    <AnchorButton 
+                        icon="git-branch" 
+                        text="Show Branch Topology" 
+                        onClick={async () => {
+                            setActiveTab("topology");
+                            // if (workspaceName) {
+                            //     const graph = await appStore.apiService.getWorkspaceTopology(workspaceName);
+                            //     setBranchGraph(graph);
+                            // }
+                        }}
+                    />
 	        </div>
             </div>
             <Dialog
                 isOpen={!!selectedCommit}
                 onClose={() => setSelectedCommit(null)}
-                title={`Commit ${selectedCommit?.hash?.slice(0,7)}`}
+                title="Commit Log"
             >
-                {selectedCommit && (
+                {Array.isArray(selectedCommit) && selectedCommit.length > 0 ? (
+                    <div style={{ fontFamily: "monospace", maxHeight: 400, overflowY: "auto" }}>
+                        {selectedCommit.map((commit, idx) => (
+                            <div key={idx} style={{ marginBottom: 16, borderBottom: "1px solid #eee", paddingBottom: 8 }}>
+                                {/* <div><b>Author:</b> {commit.author}</div> */}
+                                <div><b>Date:</b> {commit.date}</div>
+                                <div><b>Message:</b><pre style={{ whiteSpace: "pre-wrap" }}>{commit.body}</pre></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
                     <div style={{ fontFamily: "monospace" }}>
-                        <div><b>Hash:</b> {selectedCommit.hash}</div>
-                        <div><b>Author:</b> {selectedCommit.author} &lt;{selectedCommit.email}&gt;</div>
-                        <div><b>Date:</b> {selectedCommit.date}</div>
-                        <div><b>Branches/Tags:</b> {selectedCommit.refs}</div>
-                        <div><b>Parents:</b> {selectedCommit.parents.join(", ")}</div>
-                        <div><b>Subject:</b> {selectedCommit.subject}</div>
-                        <div><b>Message:</b><pre>{selectedCommit.body}</pre></div>
+                        <div>No commits found.</div>
                     </div>
                 )}
             </Dialog>
