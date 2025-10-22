@@ -431,7 +431,7 @@ export const WorkspaceDialogComponent = observer(() => {
                                     </div>
                                 ) : null
                             } />
-                            <Tab id="topology" title="Branch" panel={
+                            <Tab id="topology" title="Branch Info" panel={
                                 selectedWorkspace ? (
                                     <div style={{ padding: 12 }}>
                                         <div>

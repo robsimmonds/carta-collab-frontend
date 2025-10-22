@@ -2987,7 +2987,8 @@ export class AppStore {
     public *cloneWorkspace(name: string, branchName: string) {
 	    const cloneWorkspace = yield this.apiService.cloneWorkspace(name, branchName);
         if (cloneWorkspace) {
-            this.activeWorkspace = cloneWorkspace;
+            // Inform the user the clone succeeded but do NOT switch active workspace
+            AppToaster.show(SuccessToast("duplicate", `Workspace "${cloneWorkspace.name}" copied successfully.`));
             return true;
         }
         return false;    
